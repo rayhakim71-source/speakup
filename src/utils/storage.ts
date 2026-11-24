@@ -15,6 +15,19 @@ const KEYS = {
   proposals: 'speakup_proposals_v1',
 };
 
+const OLD_WEB_APP_URL = 'https://script.google.com/a/macros/guru.smp.belajar.id/s/AKfycbzmrZU3lIcpK41IWf7xjYWO8J_XCSi4GKh5yOEHcqohtjHffgwmBP37B7QpIPEA_rDAbw/exec';
+const DEFAULT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwTAx5MwJY9kSaZIptoQ84IsGoU6gfASber-JMkQ1bI7Rpe5BxAJroiB4sk35Jmn8twYg/exec';
+
+export async function postToAppsScript(webAppUrl: string, payload: Record<string, unknown>) {
+  const res = await fetch(webAppUrl, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
 export const getStoredSessions = (): SessionData[] => {
   const data = localStorage.getItem(KEYS.sessions);
   if (!data) return initialSessions;
@@ -90,11 +103,32 @@ export const addHistoryItem = (role: string, action: string, details: string) =>
 
 export const getStoredSync = (): SyncSettings => {
   const data = localStorage.getItem(KEYS.sync);
-  if (!data) return { webAppUrl: '', token: '', driveFolderId: '', spreadsheetId: '', proposalsSheetName: 'UsulanTopik', connectionStatus: 'idle' };
+  const defaultSync: SyncSettings = {
+    webAppUrl: DEFAULT_WEB_APP_URL,
+    token: 'GANTI_DENGAN_TOKEN_ANDA',
+    driveFolderId: '',
+    spreadsheetId: '',
+    proposalsSheetName: 'Form Responses 1',
+    connectionStatus: 'idle',
+  };
+  if (!data) return defaultSync;
   try {
     const parsed = JSON.parse(data);
-    return { proposalsSheetName: 'UsulanTopik', connectionStatus: 'idle', ...parsed };
-  } catch { return { webAppUrl: '', token: '', driveFolderId: '', spreadsheetId: '', proposalsSheetName: 'UsulanTopik', connectionStatus: 'idle' }; }
+    const resolvedUrl =
+      !parsed.webAppUrl || parsed.webAppUrl === OLD_WEB_APP_URL
+        ? DEFAULT_WEB_APP_URL
+        : parsed.webAppUrl;
+    const resolvedSheetName =
+      !parsed.proposalsSheetName || parsed.proposalsSheetName === 'UsulanTopik'
+        ? 'Form Responses 1'
+        : parsed.proposalsSheetName;
+    return {
+      ...defaultSync,
+      ...parsed,
+      webAppUrl: resolvedUrl,
+      proposalsSheetName: resolvedSheetName,
+    };
+  } catch { return defaultSync; }
 };
 
 export const saveStoredSync = (sync: SyncSettings) => {

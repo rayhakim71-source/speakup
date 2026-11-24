@@ -17,6 +17,7 @@ import {
   getStoredAuth,
   clearStoredAuth,
   addHistoryItem,
+  postToAppsScript,
 } from './utils/storage';
 import { SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, TopicProposal, SyncSettings } from './types';
 import { Header } from './components/common/Header';
@@ -58,6 +59,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'public' | 'session-detail' | 'admin'>('public');
   const [publicView, setPublicView] = useState<'home' | 'this-week' | 'toolkit' | 'archive' | 'about'>('home');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [editingSessionIdFromProposal, setEditingSessionIdFromProposal] = useState<string | null>(null);
   const [adminMenu, setAdminMenu] = useState<string>('dashboard');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -111,6 +113,49 @@ export default function App() {
 
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [auth.isLoggedIn]);
+
+  // Pull synced public data from Google Sheets on initial load
+  useEffect(() => {
+    const activeSync = getStoredSync();
+    if (!activeSync.webAppUrl) return;
+    let cancelled = false;
+    postToAppsScript(activeSync.webAppUrl, { action: 'getPublicData' })
+      .then((res) => {
+        if (cancelled || !res || !res.success) return;
+        if (Array.isArray(res.sessions) && res.sessions.length > 0) {
+          setSessions((prev) => {
+            const drafts = prev.filter((s) => s.status === 'Draf');
+            const merged = [...drafts, ...res.sessions.filter((s: SessionData) => s.status !== 'Draf')];
+            saveStoredSessions(merged);
+            return merged;
+          });
+        }
+        if (Array.isArray(res.toolkit) && res.toolkit.length > 0) {
+          setToolkit(res.toolkit);
+          saveStoredToolkit(res.toolkit);
+        }
+        if (res.schedule) {
+          setSchedule((prev) => {
+            const merged = { ...prev, ...res.schedule };
+            saveStoredSchedule(merged);
+            return merged;
+          });
+        }
+        if (res.cms) {
+          setCms((prev) => {
+            const merged = { ...prev, ...res.cms };
+            saveStoredCms(merged);
+            return merged;
+          });
+        }
+      })
+      .catch(() => {
+        // fallback cleanly to local storage when offline
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleNavigate = (href: string) => {
     if (href.startsWith('#')) {
@@ -191,6 +236,7 @@ export default function App() {
     const updatedSessions = [newSes, ...sessions];
     handleSaveSessions(updatedSessions);
     handleUpdateProposalStatus(proposal.id, 'Disetujui');
+    setEditingSessionIdFromProposal(newSes.id);
     setAdminMenu('sessions');
   };
 
@@ -248,6 +294,8 @@ export default function App() {
         {adminMenu === 'sessions' && (
           <AdminSessions
             sessions={sessions}
+            initialEditSessionId={editingSessionIdFromProposal}
+            onClearInitialEdit={() => setEditingSessionIdFromProposal(null)}
             onSaveSession={handleSaveSingleSession}
             onDeleteSession={handleDeleteSession}
             onToggleStatus={handleToggleStatus}
@@ -257,9 +305,13 @@ export default function App() {
         {adminMenu === 'proposals' && (
           <AdminProposals
             proposals={proposals}
-            sessions={sessions}
             sync={sync}
+            role={auth.role}
             onUpdateProposalStatus={handleUpdateProposalStatus}
+            onSaveProposals={(props) => {
+              setProposals(props);
+              saveStoredProposals(props);
+            }}
             onCreateSessionFromProposal={handleCreateSessionFromProposal}
             showToast={showToast}
           />
@@ -275,7 +327,20 @@ export default function App() {
         {adminMenu === 'cms' && auth.role === 'superadmin' && (
           <SuperCms cms={cms} onSaveCms={handleSaveCms} showToast={showToast} />
         )}
-        {adminMenu === 'sync' && auth.role === 'superadmin' && <SuperSync showToast={showToast} />}
+        {adminMenu === 'sync' && auth.role === 'superadmin' && (
+          <SuperSync
+            sessions={sessions}
+            toolkit={toolkit}
+            schedule={schedule}
+            cms={cms}
+            onSyncChange={(updated) => setSync(updated)}
+            onProposalsLoaded={(props) => {
+              setProposals(props);
+              saveStoredProposals(props);
+            }}
+            showToast={showToast}
+          />
+        )}
         {adminMenu === 'firebase' && auth.role === 'superadmin' && <SuperFirebase />}
         {adminMenu === 'users' && auth.role === 'superadmin' && <SuperUsers showToast={showToast} />}
         <NotificationToast message={toastMessage} />
@@ -283,7 +348,7 @@ export default function App() {
     );
   }
 
-  if (currentView === 'session-detail' && selectedArchivedSession) {
+  if (currentView === 'session-detail' && selectedArchivedSession && (selectedArchivedSession.status !== 'Draf' || auth.isLoggedIn)) {
     return (
       <div className="min-h-screen bg-[#F2EBDD] text-[#252623] flex flex-col justify-between">
         <SessionDetail

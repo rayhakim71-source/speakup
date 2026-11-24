@@ -6,7 +6,7 @@ export const APPS_SCRIPT_CODE = `/**
  */
 
 var FOLDER_ID = "1A05dEI5jQ4iB9x-_7j-OfY8GZsAgacTb";
-var SPREADSHEET_ID = "1Bjap1Zqy7esjgV_lxk2qNI8Hjw3TkcAFaSXE8uGXaVM";
+var SPREADSHEET_ID = "1zdKNn7AnQBVv1Id3xdQMVM8upOOZIBe8LSnmURpjvm8";
 // Ganti nilai di bawah dengan token rahasia Anda sendiri
 var TOKEN = "GANTI_DENGAN_TOKEN_ANDA";
 
@@ -105,6 +105,47 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (action === "getPublicData") {
+      var shSesi = ss.getSheetByName("Sesi");
+      var pubSessions = [];
+      if (shSesi) {
+        var sRows = shSesi.getDataRange().getValues();
+        var sJson = sRows.length > 1 ? sRows[sRows.length - 1][1] : null;
+        var allSesi = sJson ? JSON.parse(sJson) : [];
+        for (var si = 0; si < allSesi.length; si++) {
+          if (allSesi[si].status === "Mendatang" || allSesi[si].status === "Arsip") {
+            pubSessions.push(allSesi[si]);
+          }
+        }
+      }
+      var shToolkit = ss.getSheetByName("Toolkit");
+      var pubToolkit = null;
+      if (shToolkit) {
+        var tRows = shToolkit.getDataRange().getValues();
+        var tJson = tRows.length > 1 ? tRows[tRows.length - 1][1] : null;
+        if (tJson) pubToolkit = JSON.parse(tJson);
+      }
+      var shPengaturan = ss.getSheetByName("Pengaturan");
+      var pubSchedule = null;
+      var pubCms = null;
+      if (shPengaturan) {
+        var pRows = shPengaturan.getDataRange().getValues();
+        var pJson = pRows.length > 1 ? pRows[pRows.length - 1][1] : null;
+        if (pJson) {
+          var pObj = JSON.parse(pJson);
+          pubSchedule = pObj.schedule || null;
+          pubCms = pObj.cms || null;
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        sessions: pubSessions,
+        toolkit: pubToolkit,
+        schedule: pubSchedule,
+        cms: pubCms
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (action === "syncData") {
       var collection = data.collection;
       var payload = data.payload;
@@ -137,7 +178,12 @@ function doPost(e) {
         var allSheets = ss.getSheets();
         for (var s = 0; s < allSheets.length; s++) {
           var sName = allSheets[s].getName();
-          if (sName.indexOf("Form Responses") === 0 || sName.indexOf("Tanggapan Formulir") === 0) {
+          if (
+            sName.indexOf("Form Responses") === 0 ||
+            sName.indexOf("Tanggapan Formulir") === 0 ||
+            sName.indexOf("Jawaban Formulir") === 0 ||
+            sName.indexOf("Respons Formulir") === 0
+          ) {
             sh = allSheets[s];
             break;
           }
@@ -153,27 +199,74 @@ function doPost(e) {
           .setMimeType(ContentService.MimeType.JSON);
       }
       var headers = dataRows[0];
-      var statusColIdx = headers.indexOf("Status");
+      var statusColIdx = -1;
+      var nameIdx = -1;
+      var classIdx = -1;
+      var topicIdx = -1;
+      var mainQIdx = -1;
+      var d1Idx = -1;
+      var d2Idx = -1;
+      var d3Idx = -1;
+
+      for (var h = 0; h < headers.length; h++) {
+        var hLower = String(headers[h] || "").toLowerCase().trim();
+        if (hLower === "status") statusColIdx = h;
+        else if (nameIdx === -1 && (hLower.indexOf("name") !== -1 || hLower.indexOf("nama") !== -1)) nameIdx = h;
+        else if (classIdx === -1 && (hLower.indexOf("class") !== -1 || hLower.indexOf("kelas") !== -1)) classIdx = h;
+        else if (topicIdx === -1 && (hLower.indexOf("topic") !== -1 || hLower.indexOf("topik") !== -1)) topicIdx = h;
+        else if (mainQIdx === -1 && (hLower.indexOf("pertanyaan utama") !== -1 || hLower.indexOf("main question") !== -1)) mainQIdx = h;
+        else if (d1Idx === -1 && (hLower.indexOf("question 1") !== -1 || hLower.indexOf("questions 1") !== -1 || hLower.indexOf("diskusi 1") !== -1)) d1Idx = h;
+        else if (d2Idx === -1 && (hLower.indexOf("question 2") !== -1 || hLower.indexOf("questions 2") !== -1 || hLower.indexOf("diskusi 2") !== -1)) d2Idx = h;
+        else if (d3Idx === -1 && (hLower.indexOf("question 3") !== -1 || hLower.indexOf("questions 3") !== -1 || hLower.indexOf("diskusi 3") !== -1)) d3Idx = h;
+      }
+
       if (statusColIdx === -1) {
         sh.getRange(1, headers.length + 1).setValue("Status");
         statusColIdx = headers.length;
       }
+
+      if (nameIdx === -1) nameIdx = 1;
+      if (classIdx === -1) classIdx = 2;
+      if (topicIdx === -1) topicIdx = 3;
+      if (d1Idx === -1 && d2Idx === -1 && d3Idx === -1) {
+        if (mainQIdx === -1 && headers.length <= 7) {
+          d1Idx = 4;
+          d2Idx = 5;
+          d3Idx = 6;
+        } else {
+          mainQIdx = 4;
+          d1Idx = 5;
+          d2Idx = 6;
+          d3Idx = 7;
+        }
+      }
+
+      var getVal = function(r, idx) {
+        if (idx < 0 || idx === statusColIdx || idx >= r.length) return "";
+        return String(r[idx] || "");
+      };
+
       var proposals = [];
       for (var i = 1; i < dataRows.length; i++) {
         var row = dataRows[i];
-        if (!row[1]) continue;
+        if (!row[0] && !getVal(row, nameIdx) && !getVal(row, topicIdx)) continue;
+        var tsStr = "";
+        if (row[0]) {
+          var dObj = new Date(row[0]);
+          tsStr = isNaN(dObj.getTime()) ? String(row[0]) : dObj.toISOString().replace('T', ' ').substring(0, 16);
+        }
         proposals.push({
           id: "prop-" + i,
           rowIdx: i + 1,
-          timestamp: row[0] ? new Date(row[0]).toISOString().replace('T', ' ').substring(0, 16) : "",
-          namaDepan: row[1] || "",
-          kelas: row[2] || "",
-          usulanTopik: row[3] || "",
-          pertanyaanUtama: row[4] || "",
-          diskusi1: row[5] || "",
-          diskusi2: row[6] || "",
-          diskusi3: row[7] || "",
-          status: row[statusColIdx] || "Baru"
+          timestamp: tsStr,
+          namaDepan: getVal(row, nameIdx),
+          kelas: getVal(row, classIdx),
+          usulanTopik: getVal(row, topicIdx),
+          pertanyaanUtama: getVal(row, mainQIdx),
+          diskusi1: getVal(row, d1Idx),
+          diskusi2: getVal(row, d2Idx),
+          diskusi3: getVal(row, d3Idx),
+          status: String(row[statusColIdx] || "Baru")
         });
       }
       return ContentService.createTextOutput(JSON.stringify({ success: true, proposals: proposals }))

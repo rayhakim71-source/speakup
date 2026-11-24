@@ -1,18 +1,33 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
 import React, { useState } from 'react';
-import { SyncSettings } from '../../types';
-import { getStoredSync, saveStoredSync, addHistoryItem } from '../../utils/storage';
+import { SyncSettings, SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, TopicProposal } from '../../types';
+import { getStoredSync, saveStoredSync, addHistoryItem, postToAppsScript } from '../../utils/storage';
 import { APPS_SCRIPT_CODE } from '../../utils/appsScriptCode';
 
 interface SuperSyncProps {
+  sessions: SessionData[];
+  toolkit: ToolkitCategory[];
+  schedule: ScheduleSettings;
+  cms: CmsSettings;
+  onSyncChange: (sync: SyncSettings) => void;
+  onProposalsLoaded: (proposals: TopicProposal[]) => void;
   showToast: (msg: string) => void;
 }
 
-export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
+export const SuperSync: React.FC<SuperSyncProps> = ({
+  sessions,
+  toolkit,
+  schedule,
+  cms,
+  onSyncChange,
+  onProposalsLoaded,
+  showToast,
+}) => {
   const [sync, setSync] = useState<SyncSettings>(getStoredSync());
   const [copied, setCopied] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [syncingColl, setSyncingColl] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
 
   const handleCopyCode = () => {
@@ -25,6 +40,7 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     saveStoredSync(sync);
+    onSyncChange(sync);
     addHistoryItem('superadmin', 'Sinkronisasi', 'Pengaturan sinkronisasi disimpan.');
     showToast('Berhasil disimpan');
   };
@@ -36,15 +52,16 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
     }
     setTesting(true);
     try {
-      const res = await fetch(sync.webAppUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'testConnection', token: sync.token }),
+      const data = await postToAppsScript(sync.webAppUrl, {
+        action: 'testConnection',
+        token: sync.token,
       });
-      const data = await res.json();
       if (data.success) {
         setTestResult('Terhubung');
-        setSync({ ...sync, connectionStatus: 'connected' });
+        const updated: SyncSettings = { ...sync, connectionStatus: 'connected' };
+        setSync(updated);
+        saveStoredSync(updated);
+        onSyncChange(updated);
       } else {
         setTestResult('Gagal');
         setSync({ ...sync, connectionStatus: 'failed' });
@@ -57,13 +74,66 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
     }
   };
 
-  const handleSyncCollection = (collectionName: string) => {
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 16);
-    const updated = { ...sync, lastSyncTime: now };
-    setSync(updated);
-    saveStoredSync(updated);
-    addHistoryItem('superadmin', 'Sinkronisasi', `Sinkronisasi koleksi ${collectionName} berhasil.`);
-    showToast('Berhasil disimpan');
+  const handleSyncCollection = async (collectionName: string) => {
+    if (!sync.webAppUrl) {
+      showToast('Gagal');
+      return;
+    }
+    setSyncingColl(collectionName);
+    try {
+      let ok = false;
+      if (collectionName === 'Usulan') {
+        const res = await postToAppsScript(sync.webAppUrl, {
+          action: 'getProposals',
+          token: sync.token,
+          sheetName: sync.proposalsSheetName || 'Form Responses 1',
+        });
+        if (res.success && Array.isArray(res.proposals)) {
+          onProposalsLoaded(res.proposals);
+          ok = true;
+        }
+      } else if (collectionName === 'Sesi') {
+        const res = await postToAppsScript(sync.webAppUrl, {
+          action: 'syncData',
+          token: sync.token,
+          collection: 'Sesi',
+          payload: sessions,
+        });
+        ok = Boolean(res.success);
+      } else if (collectionName === 'Toolkit') {
+        const res = await postToAppsScript(sync.webAppUrl, {
+          action: 'syncData',
+          token: sync.token,
+          collection: 'Toolkit',
+          payload: toolkit,
+        });
+        ok = Boolean(res.success);
+      } else if (collectionName === 'Jadwal' || collectionName === 'Pengaturan CMS') {
+        const res = await postToAppsScript(sync.webAppUrl, {
+          action: 'syncData',
+          token: sync.token,
+          collection: 'Pengaturan',
+          payload: { schedule, cms },
+        });
+        ok = Boolean(res.success);
+      }
+
+      if (ok) {
+        const now = new Date().toISOString().replace('T', ' ').substring(0, 16);
+        const updated = { ...sync, lastSyncTime: now };
+        setSync(updated);
+        saveStoredSync(updated);
+        onSyncChange(updated);
+        addHistoryItem('superadmin', 'Sinkronisasi', `Sinkronisasi koleksi ${collectionName} berhasil.`);
+        showToast('Berhasil disimpan');
+      } else {
+        showToast('Gagal');
+      }
+    } catch {
+      showToast('Gagal');
+    } finally {
+      setSyncingColl(null);
+    }
   };
 
   return (
@@ -91,14 +161,14 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
 
       {/* Configuration Form */}
       <form onSubmit={handleSaveSettings} className="bg-white border border-[#252623]/10 p-8 rounded shadow-sm space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-medium mb-1">URL Web App *</label>
             <input
               type="text"
               value={sync.webAppUrl}
               onChange={(e) => setSync({ ...sync, webAppUrl: e.target.value })}
-              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 rounded text-sm focus:outline-none focus:border-[#183D35]"
+              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 min-h-[48px] rounded text-sm focus:outline-none focus:border-[#183D35]"
             />
           </div>
           <div>
@@ -107,37 +177,16 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
               type="text"
               value={sync.token}
               onChange={(e) => setSync({ ...sync, token: e.target.value })}
-              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 rounded text-sm focus:outline-none focus:border-[#183D35]"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium mb-1">ID Folder Drive</label>
-            <input
-              type="text"
-              value={sync.driveFolderId}
-              onChange={(e) => setSync({ ...sync, driveFolderId: e.target.value })}
-              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 rounded text-sm focus:outline-none focus:border-[#183D35]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">ID Spreadsheet</label>
-            <input
-              type="text"
-              value={sync.spreadsheetId}
-              onChange={(e) => setSync({ ...sync, spreadsheetId: e.target.value })}
-              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 rounded text-sm focus:outline-none focus:border-[#183D35]"
+              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 min-h-[48px] rounded text-sm focus:outline-none focus:border-[#183D35]"
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Nama Sheet Usulan</label>
             <input
               type="text"
-              value={sync.proposalsSheetName || 'UsulanTopik'}
+              value={sync.proposalsSheetName || 'Form Responses 1'}
               onChange={(e) => setSync({ ...sync, proposalsSheetName: e.target.value })}
-              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 rounded text-sm focus:outline-none focus:border-[#183D35]"
+              className="w-full bg-[#F2EBDD]/50 border border-[#252623]/20 px-3 py-2 min-h-[48px] rounded text-sm focus:outline-none focus:border-[#183D35]"
             />
           </div>
         </div>
@@ -148,7 +197,7 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
               type="button"
               onClick={handleTestConnection}
               disabled={testing}
-              className="px-4 py-2 border border-[#252623] rounded text-sm font-medium hover:bg-[#252623]/5 transition-colors"
+              className="px-4 py-2 min-h-[44px] border border-[#252623] rounded text-sm font-medium hover:bg-[#252623]/5 transition-colors"
             >
               Uji Koneksi
             </button>
@@ -160,7 +209,7 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
           </div>
           <button
             type="submit"
-            className="px-6 py-2.5 bg-[#183D35] text-[#F2EBDD] rounded text-sm font-medium hover:bg-[#183D35]/90 transition-colors"
+            className="px-6 py-2.5 min-h-[44px] bg-[#183D35] text-[#F2EBDD] rounded text-sm font-medium hover:bg-[#183D35]/90 transition-colors"
           >
             Simpan
           </button>
@@ -175,13 +224,14 @@ export const SuperSync: React.FC<SuperSyncProps> = ({ showToast }) => {
             <div key={coll} className="flex justify-between items-center bg-[#F2EBDD]/30 p-4 rounded border border-[#252623]/10">
               <div>
                 <span className="font-medium text-sm text-[#183D35]">{coll}</span>
-                {sync.lastSyncTime && <span className="text-xs text-[#252623]/60 ml-4">Sinkron: {sync.lastSyncTime}</span>}
+                {sync.lastSyncTime && <span className="text-xs text-[#252623]/60 ml-4">{sync.lastSyncTime}</span>}
               </div>
               <button
                 onClick={() => handleSyncCollection(coll)}
-                className="px-4 py-1.5 bg-[#183D35] text-[#F2EBDD] text-xs rounded hover:bg-[#183D35]/90 transition-colors"
+                disabled={syncingColl === coll}
+                className="px-4 py-2 min-h-[44px] bg-[#183D35] text-[#F2EBDD] text-xs rounded hover:bg-[#183D35]/90 transition-colors"
               >
-                Sinkronkan
+                {syncingColl === coll ? 'Menyinkronkan...' : 'Sinkronkan'}
               </button>
             </div>
           ))}

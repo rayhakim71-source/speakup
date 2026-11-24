@@ -1,11 +1,13 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SessionData } from '../../types';
 import { AdminSessionForm } from './AdminSessionForm';
 
 interface AdminSessionsProps {
   sessions: SessionData[];
+  initialEditSessionId?: string | null;
+  onClearInitialEdit?: () => void;
   onSaveSession: (session: SessionData) => void;
   onDeleteSession: (id: string) => void;
   onToggleStatus: (id: string) => void;
@@ -14,6 +16,8 @@ interface AdminSessionsProps {
 
 export const AdminSessions: React.FC<AdminSessionsProps> = ({
   sessions,
+  initialEditSessionId,
+  onClearInitialEdit,
   onSaveSession,
   onDeleteSession,
   onToggleStatus,
@@ -23,6 +27,17 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
   const [currentSession, setCurrentSession] = useState<SessionData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Mendatang' | 'Arsip' | 'Draf'>('All');
+
+  useEffect(() => {
+    if (initialEditSessionId) {
+      const target = sessions.find((s) => s.id === initialEditSessionId);
+      if (target) {
+        setCurrentSession(target);
+        setIsEditing(true);
+      }
+      onClearInitialEdit?.();
+    }
+  }, [initialEditSessionId, sessions, onClearInitialEdit]);
 
   const filtered = sessions
     .filter((s) => statusFilter === 'All' || s.status === statusFilter)
@@ -48,7 +63,7 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
         {!isEditing && (
           <button
             onClick={handleAdd}
-            className="bg-[#183D35] text-[#F2EBDD] px-5 py-2.5 rounded text-sm font-medium hover:bg-[#183D35]/90 transition-colors"
+            className="bg-[#183D35] text-[#F2EBDD] px-5 py-2.5 min-h-[44px] rounded text-sm font-medium hover:bg-[#183D35]/90 transition-colors"
           >
             Tambah Sesi
           </button>
@@ -73,12 +88,12 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari sesi..."
-              className="flex-1 bg-white border border-[#252623]/20 px-4 py-2.5 rounded text-sm focus:outline-none focus:border-[#183D35]"
+              className="flex-1 bg-white border border-[#252623]/20 px-4 py-2.5 min-h-[48px] rounded text-sm focus:outline-none focus:border-[#183D35]"
             />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-white border border-[#252623]/20 px-4 py-2.5 rounded text-sm focus:outline-none focus:border-[#183D35]"
+              className="bg-white border border-[#252623]/20 px-4 py-2.5 min-h-[48px] rounded text-sm focus:outline-none focus:border-[#183D35]"
             >
               <option value="All">Semua Status</option>
               <option value="Mendatang">Mendatang</option>
@@ -114,12 +129,12 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
                         <td className="p-4 text-[#252623]/80">{session.tanggal}</td>
                         <td className="p-4">
                           <span
-                            className={`px-2.5 py-1 rounded text-xs font-medium ${
+                            className={`text-xs font-semibold ${
                               session.status === 'Mendatang'
-                                ? 'bg-[#183D35] text-[#F2EBDD]'
+                                ? 'text-[#183D35]'
                                 : session.status === 'Draf'
-                                ? 'bg-[#D6A64A] text-[#183D35]'
-                                : 'bg-[#252623]/10 text-[#252623]'
+                                ? 'text-[#B96549]'
+                                : 'text-[#252623]/60'
                             }`}
                           >
                             {session.status}
