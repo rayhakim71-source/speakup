@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'DM Sans', sans-serif, system-ui;
+    background-color: #F2EBDD;
+    color: #252623;
+    scroll-behavior: smooth;
+  }
+  h1, h2, h3, .font-serif {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+/* Custom scrollbar and print styles */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

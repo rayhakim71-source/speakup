@@ -1,0 +1,365 @@
+Berkas ini berisi perintah lengkap untuk membangun sebuah aplikasi web. Baca seluruh isinya dan jalankan semuanya secara berurutan dari atas ke bawah tanpa melewatkan satu bagian pun. Bagian "Sinkronisasi ke Google Sheets" (di paling bawah) dikerjakan PALING AKHIR, setelah seluruh aplikasi selesai.
+
+Buatkan aplikasi web website program sekolah bernama "SPEAK UP!" (English Speaking Club, SMP Negeri 1 Bengkalis) dengan spesifikasi berikut.
+
+PENTING: tampilan aplikasi harus bersih dan profesional seperti produk jadi, sempurna dan responsif di layar HP (menu, tombol, dan semua elemen rapi, proporsional, tidak ada yang tersembunyi), tanpa satu pun teks petunjuk, penjelasan fungsi, atau keterangan teknis (termasuk soal unggah file, Drive, Apps Script, atau spreadsheet). Hanya label, konten, pesan galat, dan notifikasi hasil aksi yang boleh tampil. Tombol, menu, dan kolom harus mudah dipakai dan dipahami lewat label yang jelas saja, tanpa ikon dekoratif dan tanpa badge atau chip berbentuk tombol palsu.
+
+## 1. Tujuan dan Pengguna
+SPEAK UP! adalah program kebiasaan berbahasa Inggris mingguan untuk siswa SMP, terinspirasi talk bergaya TED dan percakapan bermakna. Programnya BUKAN kursus formal, BUKAN lomba, dan BUKAN sekadar pertunjukan pidato. Tujuannya membangun komunitas tempat siswa percaya diri mengungkapkan ide, mendengarkan, bertanya, dan memakai bahasa Inggris dalam situasi nyata. Prinsipnya: "Speak to share ideas, not just to practice English." dan "We don't speak English because we are good at it. We become better at English because we keep speaking it." Website harus menyampaikan bahwa siswa tidak perlu bahasa Inggris yang sempurna.
+
+Kegiatan berlangsung SETIAP HARI SABTU pada JAM ISTIRAHAT PERTAMA di LAB BAHASA. Fungsi terpenting website: siswa membuka website dan langsung melihat sesi mendatang (topik, pertanyaan utama, hari, waktu, tempat) lalu bisa mempersiapkan diri. Fungsi kedua: tombol menuju dokumentasi kegiatan sebelumnya. Pengguna: siswa (pembaca, memakai HP), guru pembina (admin) yang memperbarui isi setiap minggu, dan superadmin.
+
+## 2. Bahasa dan Nada
+- Seluruh tampilan publik berbahasa Inggris, sederhana dan ramah untuk siswa dengan kemampuan Inggris rendah. Arti kata selalu disertai terjemahan Indonesia.
+- Panel admin dan superadmin berbahasa Indonesia.
+- Judul utama: "SPEAK UP!" Slogan: "Learn to Speak. Dare to Think. Share Your Ideas." Teks pendukung: "A space where students speak English, explore ideas, share perspectives, and grow together — one conversation at a time."
+- Nada: berani, editorial, hangat, tidak kekanak-kanakan.
+
+## 3. Tampilan dan Desain
+Gaya editorial bergaya majalah independen dan publikasi intelektual: berani, hangat, sedikit vintage, tidak seperti template website sekolah. TAMPILAN SEDERHANA: sedikit bagian, tipografi besar, tanpa gambar bawaan.
+- Warna: hijau hutan tua #183D35 (bagian hero dan footer), krem hangat #F2EBDD (latar utama), kuning emas redup #D6A64A (aksen tombol utama dan garis), terakota #B96549 (aksen sekunder), arang #252623 (teks).
+- Huruf: Playfair Display tebal untuk judul besar; DM Sans untuk isi dan menu.
+- Hierarki dari tipografi besar, nomor bagian berupa teks biasa (01, 02, 03), garis tipis, tata letak asimetris yang disengaja, dan tekstur kertas halus yang dibuat murni dengan CSS (bukan gambar).
+- Sudut tajam atau radius sangat kecil (2px). Tanpa gradien berlebihan, tanpa glassmorphism, tanpa kartu membulat berlebihan, tanpa ilustrasi kekanak-kanakan, tanpa animasi berlebihan, tanpa tampilan seperti dasbor.
+- Hero berupa komposisi tipografi murni (judul SPEAK UP! sangat besar di latar hijau tua, garis tipis kuning emas). Tidak ada ilustrasi mikrofon, gelombang suara, atau foto bawaan. Foto hero opsional yang bisa dipasang dari panel; bila kosong tampil tipografi murni.
+
+## Aturan Tampilan Profesional dan Responsif (WAJIB DIPATUHI, TANPA PENGECUALIAN)
+
+Tampilan harus seperti produk jadi yang rapi dan profesional, bukan prototipe.
+
+LARANGAN MUTLAK: TIDAK ADA SATU PUN teks petunjuk, penjelasan, atau keterangan fungsi di antarmuka. Ini berlaku untuk semua halaman, formulir, dialog, dan dashboard admin.
+
+Contoh yang DILARANG tampil di UI (dan semua kalimat serupa):
+- "Gunakan tombol ini untuk mengunggah gambar."
+- "Gambar akan disimpan ke Drive melalui Apps Script." atau penyebutan Drive, Apps Script, base64, atau cara kerja teknis apa pun.
+- "Format yang didukung: JPG, PNG. Maksimal 5 MB." (batas hanya diperiksa di kode; pesan muncul HANYA bila pengguna melanggar)
+- "Isi kolom di bawah ini...", "Klik di sini untuk...", "Fitur ini digunakan untuk...", "Catatan:", "Tips:", "Perhatian:"
+- Teks kecil abu-abu di bawah tombol, kolom, judul, atau kartu yang menjelaskan fungsinya.
+- Tooltip, balon petunjuk, tur, onboarding, banner "Cara menggunakan", badge "Baru" atau "Demo", kata simulasi/demo/mock, dan komentar pengembang.
+- Paragraf pengantar di atas formulir atau tabel.
+
+HANYA teks berikut yang boleh tampil:
+1. Konten asli aplikasi (isi berita, nama produk, data).
+2. Judul halaman dan judul bagian (satu frasa singkat).
+3. Label tombol dan menu (kata kerja singkat, 1-3 kata).
+4. Label kolom isian (satu frasa singkat, tetap tampil di atas kolom, tanda * untuk yang wajib).
+5. Pesan kesalahan validasi, hanya saat terjadi kesalahan.
+6. Notifikasi singkat hasil aksi (misalnya "Berhasil disimpan", "Gagal mengunggah", "Berhasil dihapus") yang tampil hanya 0,5 detik lalu hilang sendiri, dan teks status biasa tanpa bingkai (misalnya "Offline" saat tidak ada internet, atau "Belum aktif" pada tab yang belum diaktifkan).
+7. Judul singkat keadaan kosong (misalnya "Belum ada data"), tanpa kalimat penjelasan.
+Placeholder kolom dikosongkan, atau berisi contoh isi murni (misalnya nama orang), tidak pernah berupa kalimat instruksi.
+
+MUDAH DIGUNAKAN DAN DIPAHAMI TANPA PENJELASAN:
+- Tombol berlabel kata kerja singkat yang langsung jelas (Simpan, Tambah Siswa, Unduh Laporan, Cari, Pilih Gambar). Ikon HANYA untuk kontrol interaktif fungsional (panah geser carousel, panah buka/tutup akordeon, tombol hapus dan edit, tombol WhatsApp, ikon hamburger pembuka sidebar) dan diberi aria-label tersembunyi, bukan tulisan tampil.
+- Gunakan pola antarmuka yang sudah dikenal: kolom unggah berupa satu tombol "Pilih Gambar" atau "Pilih Dokumen"; setelah file dipilih tampilkan pratinjau (gambar kecil, atau nama file untuk dokumen) dan ikon hapus; saat mengunggah tampilkan indikator putar pada tombol, tanpa tulisan penjelasan.
+- Satu aksi utama per layar: tombol utama berwarna aksen dan menonjol, aksi sekunder berbentuk garis tepi, aksi berbahaya berwarna merah dan meminta konfirmasi lewat dialog singkat (judul dan dua tombol saja).
+- Posisi konsisten di seluruh aplikasi: tombol Tambah di kanan atas daftar; Simpan dan Batal di kanan bawah formulir; pencarian dan filter di atas tabel; menu selalu di tempat yang sama.
+- SEMUA kolom edit atau input teks (kolom teks panjang, deskripsi, editor teks, dan sejenisnya) otomatis membesar ke bawah mengikuti isi yang diketik, tanpa bilah gulir internal dan tanpa perlu ditarik manual; tinggi awal ringkas (satu atau dua baris) dan tidak terbatas ke bawah. Berlaku di semua formulir, CMS, panel admin, HP, dan desktop.
+- Formulir dikelompokkan dalam bagian berjudul singkat, urutan kolom mengikuti urutan pikiran pengguna, kolom pilihan memakai dropdown atau pilihan bertombol dengan label jelas.
+- Menu dikelompokkan logis dan hanya berisi teks (tanpa ikon dekoratif), item aktif disorot jelas.
+- Hierarki visual jelas: ukuran huruf konsisten untuk judul halaman, judul bagian, dan isi; kontras warna cukup; tabel dengan judul kolom jelas.
+
+MENU, DROPDOWN, DAN PANEL MELAYANG (dropdown pilihan, sidebar, menu aksi baris tabel, menu profil, pemilih tanggal, notifikasi, popover):
+- Selalu tampil penuh di dalam layar, termasuk di ponsel kecil: tidak terpotong, tidak tersembunyi di balik elemen lain, tidak membuat halaman bergeser ke samping. Menu tampil di lapisan paling atas sehingga tidak terpotong oleh kartu, kontainer, atau tabel yang bisa digulir.
+- Posisi menyesuaikan ruang: bila tidak muat di bawah, tampil ke atas; bila tidak muat di kanan, geser ke kiri. Lebar maksimum = lebar layar dikurangi 16px; tinggi maksimum = tinggi layar dikurangi 32px dengan gulir di dalam menu. Di ponsel, menu panjang atau pemilih tampil sebagai panel dari bawah (bottom sheet).
+- Menutup otomatis saat pengguna mengetuk atau mengklik di luar area menu, menekan Escape, memilih satu item, berpindah halaman, atau membuka menu lain. Hanya satu menu terbuka pada satu waktu.
+- Area sentuh tiap item minimal 44px; item aktif jelas; navigasi keyboard (panah, Enter) berfungsi di desktop.
+- Dialog (modal) juga responsif: lebar maksimum layar dikurangi 32px, isi bisa digulir, tombol aksi selalu terlihat, dan menutup bila lapisan gelap di luarnya diketuk (kecuali formulir yang sedang diisi, yang meminta konfirmasi singkat).
+
+KERAPIAN VISUAL: spasi lega, grid konsisten, tidak penuh sesak, tidak ada elemen dekoratif tanpa fungsi, bayangan dan sudut membulat konsisten, tampilan bersih dan hemat ruang vertikal dengan mengandalkan tipografi murni, spasi lega, dan hierarki teks yang jelas.
+
+TEMA: tidak ada tombol atau fitur pengalih tema terang/gelap. Aplikasi memakai satu tema yang mengikuti warna tema aplikasi.
+
+NOTIFIKASI: semua notifikasi (misalnya berhasil disimpan, berhasil dihapus) tampil hanya 0,5 detik (500 ms) lalu hilang sendiri, tanpa tombol tutup.
+
+LARANGAN PILL BADGE DAN TOMBOL PALSU: dilarang membungkus teks metadata, label fitur, atau kata penegas dalam bentuk kapsul lonjong, chip, badge, atau kotak berbingkai (pill badge atau rounded chip) yang menyerupai tombol tetapi tidak bisa diklik. Jangan buat elemen visual apa pun yang tampak seperti tombol jika elemen itu tidak memiliki fungsi klik atau aksi. Teks penegas hanya boleh berupa teks biasa tanpa bingkai, atau langsung dihilangkan. Teks status (misalnya "Belum aktif", "Offline") juga berupa teks biasa tanpa bingkai.
+
+LARANGAN IKON DEKORATIF DAN ORNAMEN PENGHIAS: dilarang menempatkan ikon dekoratif tanpa fungsi di atas kartu, judul, atau blok teks (seperti ikon tanda seru di atas kartu masalah, ikon hiasan di atas kartu manfaat, atau ikon ilustrasi kecil di samping judul). Jangan gunakan ikon hanya sebagai pemanis visual atau pengisi ruang kosong. Tampilan, khususnya di layar HP, harus bersih, minimalis, dan hemat ruang vertikal dengan mengandalkan kekuatan tipografi murni, spasi lega, dan hierarki teks yang jelas. Ikon HANYA diperbolehkan untuk kontrol interaktif fungsional yang memerlukan aksi klik atau sentuh langsung (seperti tombol panah geser carousel, panah buka/tutup akordeon, tombol hapus dan edit, dan tombol kontak WhatsApp). Keadaan kosong hanya berupa judul singkat, tanpa ikon atau ilustrasi.
+
+TAMPILAN HP ADALAH PRIORITAS UTAMA. Sebagian besar pengguna memakai HP, jadi semua menu, tombol, formulir, tabel, dialog, dan panel admin harus rapi, proporsional, mudah dipahami, dan mudah dioperasikan dengan satu jari di layar 360-430px. Desktop tetap rapi sebagai tampilan kedua. Tidak boleh ada tombol atau menu yang tersembunyi, berantakan, terpotong, tumpang tindih, atau tidak proporsional.
+
+SIDEBAR TERSEMBUNYI DI HP (wajib persis seperti ini):
+- Khusus tampilan HP, semua bilah menu (di tampilan publik maupun admin) berupa sidebar yang tersembunyi dan dimunculkan dengan tombol pembuka.
+- Bilah atas (header) di HP HANYA berisi logo atau nama. HAPUS semua tombol menu atau hamburger dari header; tidak boleh ada tombol hamburger atau tombol lain untuk membuka sidebar di header.
+- Tombol pembuka sidebar berada di tepi kiri layar, tepat di tengah tinggi layar, dan tidak ikut ter-scroll (tetap di tempat saat halaman digulir). Ukurannya tinggi 120px dan lebar 25px, sedikit membulat, warna mengikuti warna tema aplikasi yang sedang aktif dengan sedikit transparan agar tampil modern, dan hanya berisi satu ikon hamburger tanpa teks apa pun.
+- Saat sidebar dibuka: layar di belakangnya terkunci sehingga saat isi sidebar digulir layar latar tidak ikut ter-scroll; ada lapisan gelap di belakang sidebar; mengetuk area di luar sidebar otomatis menutup sidebar; isi menu di dalam sidebar bisa digulir mandiri dengan rapi.
+- SELURUH isi menu terlihat penuh di dalam layar, tidak terpotong dan tidak keluar layar. Item tersusun vertikal satu kolom, rata kiri, hanya teks (tanpa ikon), tinggi tiap item minimal 48px, huruf minimal 16px, jarak seragam, item aktif disorot. Submenu berupa akordeon di dalam sidebar.
+- Item "Masuk" (login) adalah satu item biasa di daftar menu sidebar, item terakhir, bergaya sama dengan item lain, dan tidak boleh menggeser, menyembunyikan, atau memperkecil item menu lain. Di desktop, "Masuk" adalah item terakhir di deretan menu; bila deretan menu terlalu penuh, beralih ke sidebar pada lebar yang lebih besar daripada membiarkan menu bertumpuk atau terpotong.
+
+TAMPILAN COMPACT DI HP UNTUK MENU DAN FITUR DI ISI HALAMAN: bila ada menu atau fitur yang berisi ikon dan teks, rapikan letaknya dan jangan memakan tempat. Jangan susun ikon di kiri dengan tulisan di bawahnya rata kiri karena memakan tempat dan kurang rapi. Ikon tidak penting; jangan fokus membuat ikon yang membuat tampilan tidak rapi dan mubazir. Gunakan teks ringkas yang compact.
+
+STANDAR TAMPILAN HP LAINNYA:
+- Tidak ada elemen yang lebih lebar dari layar dan tidak ada gulir ke samping.
+- Semua tombol dan tautan minimal 44px dengan jarak cukup, tidak berhimpitan.
+- Huruf isi minimal 16px; judul proporsional (tidak memenuhi layar); kolom isian setinggi minimal 48px dengan huruf 16px.
+- Satu kolom; kartu penuh lebar dengan jarak samping sekitar 16px; tabel menjadi kartu bertumpuk.
+- Formulir panjang memiliki bilah aksi di bawah layar (Simpan dan Batal) yang selalu terlihat; tombol aksi penuh lebar.
+- Gambar dan video berukuran proporsional dengan rasio tetap dan tidak terpotong aneh; peta dan video profil penuh lebar.
+- Banner utama tidak lebih tinggi dari satu layar dan teks di atasnya terbaca jelas.
+- Dialog tampil sebagai panel dari bawah atau hampir penuh layar dengan tombol tutup yang jelas; tombol aksi dialog selalu terlihat.
+- Menghormati area aman layar (lekukan kamera dan bilah gestur) sehingga tombol tidak tertutup.
+- Panel admin di HP memakai sidebar tersembunyi yang sama; tabel data menjadi daftar kartu dengan menu aksi ringkas; grafik menyesuaikan lebar layar.
+- Interaksi sentuh mulus: gulir halus tanpa tersendat, gestur geser (galeri, carousel, sidebar) mengikuti jari dan berhenti rapi, tidak ada gulir ganda atau halaman terkunci, tidak ada lonjakan tampilan saat memuat.
+- Sebelum dianggap selesai, periksa setiap halaman di lebar 360px, 390px, dan 430px: tidak ada tombol tersembunyi, teks terpotong, tumpang tindih, atau elemen tidak proporsional.
+
+TABLET DAN DESKTOP: tablet (768-1024px) dua kolom bila sesuai; desktop (di atas 1024px) navigasi atas atau sidebar untuk dashboard admin, grid beberapa kolom, lebar konten dibatasi agar nyaman dibaca, tabel penuh.
+
+Seluruh penjelasan teknis (Drive, Apps Script, spreadsheet, base64, batas ukuran, tipe file) hanya berada di kode dan komentar kode, TIDAK PERNAH di tampilan. Aturan ini berlaku sama untuk dashboard admin, panel CMS, dan tab Sinkronisasi (tab ini hanya boleh berisi kotak kode, label, kolom, tombol, dan status).
+
+Perangkat utama pengguna: HP (siswa), desktop sebagai tampilan kedua.
+
+## Aturan Desain Permanen (kunci di kode)
+Buat satu berkas aturan desain permanen di dalam proyek (misalnya di folder konstanta dengan nama designSystem) yang memuat aturan tampilan di bawah ini sebagai komentar dan konstanta. Di baris paling atas setiap komponen utama (halaman publik, panel admin, CMS, formulir, dan komponen bersama) tambahkan penanda: "// ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk." Setiap revisi atau penambahan fitur pada proyek ini WAJIB membaca dan mematuhi berkas itu lebih dulu, tanpa perlu diingatkan pengguna di setiap chat.
+
+Isi aturan:
+- Prinsip: minimalis, bersih, ringkas, dan jelas, tampil seperti produk jadi yang profesional.
+- Tanpa teks panjang: dilarang paragraf instruksi, tips, teks bantuan, atau penjelasan fungsi di seluruh tampilan, formulir, dan pengaturan CMS, termasuk penjelasan teknis (Drive, Apps Script, spreadsheet, format dan batas file).
+- Teks hanya label singkat 1-3 kata. Placeholder dikosongkan atau berisi contoh isi murni, bukan instruksi.
+- Tombol aksi (Simpan, Hapus, Kosongkan) tegas, langsung, dan fungsional, dengan label kata kerja singkat.
+- Setiap kolom gambar selalu punya tombol "Hapus Gambar" berikon tempat sampah di samping pratinjau; logo, banner, dan gambar popup juga bisa dihapus satu per satu (dan "Hapus Semua" untuk banner bila ada banyak).
+- Judul dan subjudul banner (dan teks serupa) boleh dikosongkan, dengan tombol cepat "Kosongkan". Bila teks kosong, tampilkan gambar murni tanpa gradien, lapisan gelap, atau wadah teks yang menutupi gambar.
+- Semua kolom edit atau input teks otomatis membesar ke bawah mengikuti isinya, tanpa bilah gulir internal.
+- Tidak ada gambar bawaan yang ditulis mati di kode atau komponen. Semua gambar berasal dari pengaturan yang bisa diganti atau dihapus dari panel; bila kosong tampilkan kerangka netral.
+- Tidak ada tombol pengalih tema terang/gelap. Notifikasi hasil aksi tampil hanya 0,5 detik lalu hilang sendiri.
+- Di HP: header hanya berisi logo atau nama; menu berupa sidebar tersembunyi yang dibuka tombol 120x25 berikon hamburger di tepi kiri tengah layar, tidak ikut ter-scroll, dengan layar belakang terkunci saat sidebar terbuka dan ketuk di luar untuk menutup.
+- Dilarang pill badge, chip, atau kotak berbingkai yang menyerupai tombol tetapi tidak bisa diklik; dilarang ikon dekoratif tanpa fungsi (ikon hanya untuk kontrol interaktif fungsional); tampilan compact dan hemat ruang vertikal.
+- Visual bersih: spasi lega, tanpa elemen dekoratif tanpa fungsi, dan tampilan HP tetap rapi, proporsional, serta tidak ada elemen tersembunyi.
+- Setiap perubahan baru mempertahankan semua aturan di atas. Jika sebuah permintaan bertentangan dengan aturan ini, tetap patuhi aturan dan sampaikan secara singkat di respons, bukan di tampilan aplikasi.
+
+## 4. Struktur Halaman dan Navigasi
+
+Model akses: publik + admin. Seluruh website terbuka untuk umum tanpa login; pengelolaan isi ada di panel admin dan superadmin di balik login.
+
+### Bagian Publik (tanpa login)
+Satu halaman berisi bagian-bagian berurutan dengan gulir halus. Menu (teks saja): Home, This Week, Speaking Toolkit, Session Archive, About, Documentation, lalu "Masuk" sebagai item terakhir. "Documentation" adalah item yang membuka tautan dokumentasi di tab baru dan hanya tampil bila tautannya terisi. Mengetuk item menu menggulir halus ke bagiannya dan item aktif disorot.
+
+Urutan bagian:
+
+1. HOME (latar hijau tua #183D35, tipografi krem):
+   - Label teks biasa di atas: "ENGLISH SPEAKING CLUB / SMP NEGERI 1 BENGKALIS".
+   - Judul sangat besar "SPEAK UP!" dalam huruf serif tebal.
+   - Tiga baris: "Learn to Speak." "Dare to Think." "Share Your Ideas."
+   - Teks pendukung dari bagian Bahasa dan Nada.
+   - Teks biasa "EVERY SATURDAY" sebagai penanda program mingguan.
+   - Blok "NEXT SESSION" di bagian terpenting hero: tanggal sesi (contoh "Saturday, 28 November 2026"), "First Break · Language Lab" (bagian waktu mengikuti pengaturan jadwal), nomor dan topik sesi, serta pertanyaan utama. Bila minggu itu ditandai "tidak ada sesi", blok ini menampilkan "No session this week" dan catatan singkat dari admin, bukan topik.
+   - Tombol utama berwarna kuning emas: "Explore This Week's Topic" (menggulir ke bagian This Week). Tombol sekunder berbingkai: "View Documentation" (membuka tautan dokumentasi di tab baru; tidak tampil bila tautan kosong).
+   - Kutipan filosofi program dalam dua baris tipografi kecil di bawah blok.
+
+2. THIS WEEK (latar krem #F2EBDD), judul "THIS WEEK" dan subjudul "Ideas Worth Talking About." Berisi isi sesi yang sedang berstatus Mendatang, dalam tata letak editorial dua kolom di desktop dan satu kolom di HP:
+   - Nomor sesi, topik, tanggal, pembicara (hanya bila diisi).
+   - Pertanyaan utama dalam huruf serif besar.
+   - Pengantar topik (singkat).
+   - Discussion Questions: 3 sampai 5 pertanyaan bernomor.
+   - Get Ready: tiga akordeon berpanah, yaitu "Vocabulary" (5-8 kata: kata Inggris, definisi sederhana, arti Indonesia, contoh kalimat), "Express Yourself" (sentence starters) dan "Mini Challenge" (tugas persiapan).
+   - Tombol "Get Ready to Speak" di bawah pertanyaan diskusi; menggulir ke Get Ready dan membuka akordeon pertama.
+   - Tombol "Print" yang membuka tampilan cetak rapi (menu dan tombol disembunyikan).
+   - Bila tidak ada sesi mendatang atau minggu itu "tidak ada sesi", tampilkan judul singkat "No session this week" dan catatan admin.
+
+3. SPEAKING TOOLKIT, judul "MY SPEAKING TOOLKIT" dan subjudul "Words to help you join the conversation." Rujukan permanen bagi siswa:
+   - Pemilih kategori berupa deretan tombol teks (8 kategori; di HP bisa digeser horizontal rapi atau berupa daftar bertumpuk).
+   - Daftar ekspresi untuk kategori terpilih. Mengetuk sebuah ekspresi membuka akordeon berisi arti Indonesia dan contoh kalimat. Tanpa tombol suara.
+   - Kolom Cari untuk mencari ekspresi di semua kategori.
+
+4. SESSION ARCHIVE, judul "PAST SESSIONS" dan subjudul "Every Talk Leaves Something Behind.":
+   - Grid bergaya majalah (satu kolom di HP, dua sampai tiga kolom di desktop), diurutkan dari sesi terbaru, hanya sesi berstatus Arsip.
+   - Tiap item: nomor sesi besar, topik, tanggal, pertanyaan utama.
+   - Kolom Cari berdasarkan topik.
+   - Mengetuk sesi membuka halaman detail (alamat sendiri) berisi: nomor, topik, tanggal, pembicara bila ada, pertanyaan utama, ringkasan diskusi, Key Expressions (ekspresi, fungsi, contoh), Vocabulary (kata, definisi, arti Indonesia, contoh), Speaking Challenge (pertanyaan, contoh respons bila ada), serta tombol "View Documentation" bila sesi itu punya tautan dokumentasi sendiri (bila tidak, memakai tautan dokumentasi umum). Ada tombol "Back" dan "Print".
+   - Teks langkah tantangan bicara yang sama di semua sesi (diatur di pengaturan): "Use at least two expressions from this session. Give one reason or example. Speak for 30–60 seconds."
+
+5. ABOUT, judul "ABOUT SPEAK UP!":
+   - Teks: "SPEAK UP! is an English-speaking habituation program created to help students build confidence, communicate ideas, and develop the habit of using English in meaningful situations." / "Inspired by TED-style talks and thoughtful conversations, students explore relevant topics, listen to different perspectives, express opinions, ask questions, and learn from one another." / "We believe language is not learned only by memorizing words or studying grammar. Language grows through use. Students don't need perfect English to begin. They need ideas, courage, curiosity, and the willingness to keep trying."
+   - Our principles (daftar bernomor): "Speak to share ideas, not just to practice English." / "Mistakes are part of learning." / "Listening is as important as speaking." / "Everyone has an idea worth sharing."
+   - Footer (latar hijau tua): nama SMP Negeri 1 Bengkalis, alamat "SMP Negeri 1 Bengkalis, Kabupaten Bengkalis, Riau", jadwal singkat "Every Saturday · First Break · Language Lab", dan kontak pembina (WhatsApp, Instagram) yang hanya tampil bila diisi.
+
+### Bagian Admin (login, peran admin)
+Menu sidebar: Dasbor, Sesi, Toolkit, Jadwal, Riwayat, Kata Sandi, Keluar.
+- Dasbor: ringkasan sesi mendatang (topik dan tanggal), jumlah sesi arsip, status tautan dokumentasi (Terisi atau Kosong), dan tombol cepat "Ubah Sesi Mendatang" dan "Ubah Dokumentasi".
+- Sesi: daftar semua sesi dengan pencarian, filter status (Mendatang, Arsip), tombol Tambah di kanan atas, ubah, hapus, urut ulang, dan tombol "Arsipkan" (memindahkan sesi mendatang ke arsip) serta "Jadikan Mendatang". Hanya satu sesi berstatus Mendatang pada satu waktu; menjadikan sesi lain mendatang membuat yang sebelumnya otomatis masuk arsip setelah konfirmasi singkat. Hapus meminta konfirmasi dan memakai urung singkat.
+- Formulir sesi, dalam bagian berjudul singkat: Info (nomor, topik, pertanyaan utama, tanggal dengan pilihan "Otomatis Sabtu berikutnya" atau "Atur Manual", pembicara opsional, status, tautan dokumentasi sesi opsional, ringkasan diskusi, pengantar), Pertanyaan Diskusi (daftar yang bisa ditambah, dihapus, diurut), Kosakata (kata, definisi, arti Indonesia, contoh kalimat; bisa ditambah, dihapus, diurut), Ekspresi (ekspresi, fungsi, contoh), Tantangan (pertanyaan dan contoh respons opsional), Sentence Starters (daftar teks), Mini Challenge dan Preparation Challenge (teks). Validasi: nomor, topik, dan pertanyaan utama wajib; nomor tidak boleh ganda.
+- Toolkit: kategori dan ekspresi (ekspresi, arti Indonesia, contoh kalimat) bisa ditambah, diubah, dihapus, dan diurut ulang, dengan pencarian.
+- Jadwal: hari kegiatan (pilihan hari, awal Sabtu), label waktu (awal "First Break"), jam dalam teks bebas dan opsional (misalnya jam istirahat pertama di sekolah; bila kosong, jam tidak ditampilkan), tempat (awal "Language Lab"), tautan dokumentasi umum (Google Drive, Google Photos, Instagram, atau tautan lain), serta tombol "Tidak Ada Sesi Minggu Ini" dengan kolom catatan singkat. Tanggal sesi otomatis = hari kegiatan berikutnya menurut zona waktu Asia/Jakarta (bila hari ini hari kegiatan, tanggal hari ini masih dianggap mendatang; mulai hari berikutnya dihitung ke minggu depan). Admin bisa menimpa tanggal manual di formulir sesi.
+- Riwayat: daftar perubahan (peran, waktu, objek yang diubah), dengan pencarian dan filter.
+- Kata Sandi: admin mengubah kata sandinya sendiri.
+
+### Bagian Superadmin (login, peran superadmin)
+Semua menu Admin, ditambah: CMS, Sinkronisasi, satu tab nonaktif (lihat bagian tab nonaktif di bawah), Pengguna (kelola kata sandi semua peran). Riwayat superadmin menampilkan semua aktivitas.
+
+## 5. Fitur dan Perilaku
+- Sesi mendatang otomatis: tanggal dihitung dari pengaturan Jadwal, bisa ditimpa manual, bisa ditandai tidak ada sesi.
+- Tautan dokumentasi: tombol di Home, di menu, dan di detail sesi arsip. Tautan umum diisi dari Jadwal dan tautan khusus per sesi dari formulir sesi. Tombol tersembunyi bila tautan kosong. Semua tautan eksternal dibuka di tab baru.
+- Pencarian di Session Archive dan Speaking Toolkit bekerja saat mengetik, tanpa tombol kirim.
+- Akordeon di Get Ready dan Toolkit: satu terbuka pada satu waktu.
+- Cetak: tombol "Print" pada This Week dan detail sesi menghasilkan tata letak A4 hitam putih yang rapi untuk dibagikan, tanpa menu dan tombol.
+- Bagian arsip mengurutkan sesi dari nomor terbesar. Sesi yang tidak punya isi sebuah komponen (misalnya tantangan) tidak menampilkan judul komponen itu.
+- Tidak ada ranking, papan peringkat, atau label pemenang di mana pun. Tidak ada nama atau foto siswa yang ditampilkan di website.
+- Pembaruan sesi oleh admin langsung terlihat di Home dan This Week setelah disimpan.
+
+## 6. Data Contoh
+Seluruh data awal ditulis sebagai data pengaturan yang bisa diubah dan dihapus dari panel (tidak ditulis mati di komponen). Konten contoh ditulis dalam bahasa Inggris sederhana.
+
+### Pengaturan Jadwal awal
+Hari: Sabtu. Label waktu: First Break. Jam: kosong. Tempat: Language Lab. Tautan dokumentasi umum: kosong. Tidak ada foto hero dan logo awal.
+
+### Sesi mendatang: Session 05 (status Mendatang, tanggal otomatis, pembicara kosong, tautan dokumentasi kosong)
+- Topik: "Can AI Replace the Way We Learn?"
+- Pertanyaan utama: "If AI can answer our questions, do we still need to learn by ourselves?"
+- Pengantar: "AI can answer many questions in seconds. It can also write, translate, and explain. So why do we still go to school and practice? This week, let's talk about what AI can do, what it cannot do, and how we can use it wisely."
+- Discussion Questions: 1) "Do you use AI to help you study?" 2) "Is getting an answer the same as understanding something?" 3) "Can AI replace the experience of learning?" 4) "What can humans do that AI cannot replace?"
+- Vocabulary (7): artificial intelligence (AI) = "computer systems that can do tasks that usually need human thinking" = kecerdasan buatan = "AI can translate a sentence in one second." / depend = "to need someone or something" = bergantung = "Some students depend on AI for every homework." / understand = "to know why or how something works" = memahami = "I can copy the answer, but I want to understand it." / effort = "energy and hard work you use to do something" = usaha = "Learning takes effort." / experience = "knowledge you get from doing things" = pengalaman = "Speaking in front of the class is a good experience." / creativity = "the ability to make new ideas" = kreativitas = "Creativity helps us solve problems." / shortcut = "a faster way that skips some steps" = jalan pintas = "A shortcut is not always the best way to learn."
+- Sentence starters (Express Yourself): "I think..." / "In my opinion..." / "I believe that..." / "I agree because..." / "I disagree because..." / "For example..." / "I think this is important because..."
+- Mini Challenge: "Think of one opinion and two reasons to support it."
+- Preparation Challenge: "Before the session, choose one question and prepare your opinion. You don't need perfect English. Just bring an idea."
+
+### Sesi arsip (status Arsip, pembicara kosong, tautan dokumentasi kosong)
+Session 04, Sabtu 21 November 2026: "Is Social Media Making Us Smarter or Distracted?"
+- Pertanyaan utama: "Does social media help us learn, or does it take our attention away?"
+- Ringkasan: "Students shared how videos and posts can teach new things, but also how notifications make it hard to focus. Many agreed that the way we use social media matters more than the apps themselves."
+- Key Expressions: "I don't completely agree." (disagree politely; "I don't completely agree. Some videos really help me study.") / "What do you think about...?" (ask a question; "What do you think about studying with short videos?") / "From my perspective..." (give an opinion; "From my perspective, balance is the key.") / "For instance..." (give an example; "For instance, I learn new words from English channels.") / "That's an interesting point." (respond to an idea; "That's an interesting point. I never thought about that.")
+- Vocabulary: distracted = "not able to focus because something else takes your attention" = terganggu / teralihkan perhatiannya = "I get distracted when my phone rings." / information = "facts or knowledge about something" = informasi = "The internet gives us a lot of information." / attention = "the act of focusing on something" = perhatian = "Please pay attention to the speaker." / balance = "a good mix, not too much of one thing" = keseimbangan = "We need a balance between study and fun." / influence = "the power to change what people think or do" = pengaruh = "Friends can have a strong influence on us."
+- Speaking Challenge: "Do you think students spend too much time on social media? Give one reason or example."
+
+Session 03, Sabtu 14 November 2026: "Why Should We Stop Being Afraid of Making Mistakes?"
+- Pertanyaan utama: "What is the worst thing that can happen when we make a mistake in English?"
+- Ringkasan: "Students talked about feeling embarrassed when they speak. The group agreed that mistakes show us what to improve, and that the audience usually cares more about the idea than the grammar."
+- Key Expressions: "I have a different opinion." (disagree politely; "I have a different opinion. I think mistakes are useful.") / "Why do you think so?" (ask for a reason; "Why do you think so? Can you explain?") / "Could you explain that?" (ask for clarification; "Could you explain that again, please?") / "This is because..." (give a reason; "This is because we learn from our mistakes.") / "I think you're right because..." (agree; "I think you're right because practice makes us braver.")
+- Vocabulary: mistake = "something that is not correct" = kesalahan = "Everyone makes mistakes." / afraid = "feeling fear" = takut = "I was afraid to speak at first." / brave = "ready to do something difficult" = berani = "She was brave to try." / embarrassed = "feeling shy or uncomfortable in front of others" = malu = "I felt embarrassed when I forgot the word." / improve = "to become better" = meningkat / memperbaiki = "We improve when we practice."
+- Speaking Challenge: "Share a time you made a mistake and what you learned from it."
+
+Session 02, Sabtu 7 November 2026: "Why Is Practice More Important Than Memorization?"
+- Pertanyaan utama: "Is it better to remember many words or to use a few words every day?"
+- Ringkasan: "Students compared memorizing word lists with using words in real conversations. The group concluded that words we use often stay in our memory longer than words we only copy."
+- Key Expressions: "What I mean is..." (clarify; "What I mean is we should use the words, not only read them.") / "In other words..." (restate; "In other words, practice makes it easier.") / "I agree with you because..." (agree; "I agree with you because speaking builds confidence.") / "Let me give you an example." (give an example; "Let me give you an example. I learned 'proud' when I used it in a sentence.") / "To sum up..." (conclude; "To sum up, practice is better than only memorizing.")
+- Vocabulary: practice = "to do something again and again to get better" = berlatih / latihan = "We practice speaking every Saturday." / memorize = "to learn something so you can remember it exactly" = menghafal = "I memorize ten words, but I forget them." / habit = "something you do regularly" = kebiasaan = "Speaking English can be a good habit." / repeat = "to say or do something again" = mengulang = "Please repeat the question." / improve = "to become better" = meningkat / memperbaiki = "Daily practice helps us improve."
+- Speaking Challenge: "What is one English habit you can do every day? Explain why."
+
+Session 01, Sabtu 31 Oktober 2026: "Why Is English Important for Our Future?"
+- Pertanyaan utama: "How can English open doors for our future?"
+- Ringkasan: "Students shared how English helps with school, technology, travel, and future jobs. They agreed that small daily practice matters more than perfect grammar."
+- Key Expressions: "In my opinion..." (give an opinion; "In my opinion, English helps us find better jobs.") / "One reason is..." (give a reason; "One reason is that many websites are in English.") / "For example..." (give an example; "For example, I watch videos in English to learn.") / "I see your point, but..." (disagree politely; "I see your point, but we also need our own language.") / "That's why I think..." (conclude; "That's why I think English is important.")
+- Vocabulary: future = "the time that will come after now" = masa depan = "English can help my future." / opportunity = "a chance to do something good" = kesempatan = "Speaking club is a good opportunity." / communicate = "to share ideas or information with others" = berkomunikasi = "We communicate with people around the world." / global = "related to the whole world" = global / mendunia = "English is a global language." / confident = "sure about yourself" = percaya diri = "I feel more confident now."
+- Speaking Challenge: "Tell us one way English can help you in ten years."
+
+### Speaking Toolkit awal (8 kategori; tiap ekspresi diberi arti Indonesia yang akurat dan satu contoh kalimat sederhana oleh Anda)
+1. Giving Opinions: "I think..." / "In my opinion..." / "I believe..."
+2. Agreeing: "I agree with you." / "That's true." / "I think you're right because..."
+3. Disagreeing Politely: "I don't completely agree." / "I see your point, but..." / "I have a different opinion."
+4. Giving Reasons: "This is because..." / "One reason is..." / "The main reason is..."
+5. Giving Examples: "For example..." / "For instance..." / "Let me give you an example."
+6. Asking Questions: "What do you think about...?" / "Why do you think so?" / "Could you explain that?"
+7. Clarifying Ideas: "What I mean is..." / "Let me explain." / "In other words..."
+8. Concluding: "To sum up..." / "In conclusion..." / "That's why I think..."
+
+## 7. Peran Pengguna dan Akses
+- Publik: melihat seluruh website tanpa login. Tidak ada pendaftaran.
+- Admin: mengelola Sesi, Toolkit, Jadwal (termasuk tautan dokumentasi), melihat Riwayat, dan mengubah kata sandi sendiri.
+- Superadmin: semua hak admin, ditambah CMS, Sinkronisasi, tab nonaktif, dan pengelolaan kata sandi semua peran.
+
+## Login Kata Sandi dan Data
+- Login HANYA dengan kata sandi (tanpa email, tanpa akun Google, tanpa nama pengguna). Kata sandi yang dimasukkan menentukan peran. Kata sandi awal: admin = admin123, superadmin = superadmin123. Semua kata sandi dapat diubah. Tidak ada pendaftaran publik.
+- Tombol login TIDAK diletakkan di badan halaman dan TIDAK berupa tombol terpisah di header. Letakkan sebagai SATU ITEM BIASA bernama "Masuk" di dalam daftar menu, sebagai item terakhir, dengan gaya yang sama seperti item menu lain, sehingga tidak mengubah susunan atau ukuran menu lain. Di HP: header hanya berisi logo atau nama, dan menu berupa sidebar tersembunyi (dibuka tombol hamburger di tepi kiri tengah layar); "Masuk" adalah item terakhir di daftar menu di dalam sidebar, sejajar dan selaras dengan item lain. Di desktop: "Masuk" adalah item terakhir pada deretan menu; bila deretan menu terlalu penuh, beralih ke sidebar pada lebar layar yang lebih besar, jangan membiarkan menu bertumpuk, terpotong, atau tersembunyi. Mengetuk "Masuk" membuka dialog sederhana berisi satu kolom "Kata Sandi" (dengan tombol lihat/sembunyikan) dan tombol "Masuk". Setelah berhasil masuk, item "Masuk" berganti menjadi satu item "Dasbor" di posisi yang sama tanpa menggeser menu lain; tombol "Keluar" berada di dalam dasbor, dan di HP tampil sebagai item terakhir daftar menu sidebar.
+- Ubah kata sandi: di panel ada menu "Kata Sandi". Admin mengubah kata sandinya sendiri; superadmin mengubah kata sandi semua peran. Formulirnya berisi kata sandi lama (untuk mengubah milik sendiri), kata sandi baru, dan ulangi kata sandi baru, dengan validasi (minimal 8 karakter) dan notifikasi singkat saat berhasil.
+- Kata sandi tidak disimpan sebagai teks biasa; simpan dalam bentuk hash dengan garam. Verifikasi login dan perubahan kata sandi diproses oleh Apps Script terhadap hash di sheet khusus (lihat bagian Sinkronisasi ke Google Sheets di paling bawah): aplikasi mengirim kata sandi yang diketik, Apps Script memeriksanya, lalu mengembalikan hasil dan peran tanpa pernah mengirim hash ke aplikasi. Selama bagian itu belum dikerjakan, verifikasi dan perubahan dilakukan secara lokal di perangkat.
+- Sesi login berakhir otomatis setelah 30 menit tidak aktif dan saat menekan Keluar.
+- Halaman admin dilindungi: pengguna yang belum masuk diarahkan ke dialog login; menu yang tidak berhak tidak ditampilkan.
+- Data: seluruh data dan pengaturan aplikasi memakai data contoh dari bagian Data Contoh yang disimpan dalam satu lapisan data terpisah dan semuanya berupa teks (file tidak pernah disimpan di dalamnya, hanya ID atau tautannya). Penyimpanan ke Google Sheets tidak dikerjakan di bagian ini, melainkan di bagian terakhir file.
+
+## 8. Keadaan Khusus
+- Memuat: kerangka abu netral pada blok sesi mendatang dan daftar, tanpa tulisan.
+- Kosong: judul singkat saja ("No session this week", "No sessions yet" di publik; "Belum ada data" di panel), tanpa ikon dan kalimat penjelasan.
+- Galat jaringan: data terakhir yang tersimpan tetap tampil; teks status biasa "Offline" bila tidak ada koneksi.
+- Halaman 404 yang rapi dengan satu tombol "Home".
+- Aksesibilitas: kontras cukup (teks krem pada hijau tua, teks arang pada krem), fokus keyboard terlihat, area sentuh minimal 44px.
+- Kinerja: huruf dimuat dengan cadangan huruf sistem; halaman cepat dibuka di HP dengan jaringan lambat; tidak ada lonjakan tampilan saat memuat.
+- SEO dan berbagi: judul halaman "SPEAK UP! | English Speaking Club SMP Negeri 1 Bengkalis", deskripsi dari teks pendukung, dan judul serta deskripsi pratinjau tautan; judul dan deskripsi bisa diubah dari CMS.
+- Tampilan cetak untuk This Week dan detail sesi rapi di A4.
+
+## Halaman Tetap Saat Dimuat Ulang
+Saat pengguna memuat ulang (refresh) atau membuka kembali aplikasi, aplikasi tetap berada di halaman yang sedang dibuka, bukan kembali ke beranda. Ini berlaku untuk semua halaman publik, halaman detail, halaman dan tab di panel admin dan superadmin, serta menu atau filter aktif yang penting. Setiap halaman memiliki alamat sendiri yang bisa dibagikan dan dibuka langsung. Tombol kembali dan maju pada peramban atau HP berfungsi benar. Sesi login admin tetap aktif setelah dimuat ulang selama belum berakhir, sehingga admin tidak perlu masuk lagi. Hal yang sama berlaku saat aplikasi dibuka offline (jika didukung). Bagian-bagian halaman publik (Home, This Week, Speaking Toolkit, Session Archive, About) juga punya alamat sendiri: membuka alamat itu langsung menggulir ke bagian tersebut, dan memuat ulang tetap di bagian yang sama.
+
+## Akses Offline dan Interaksi Mulus
+Jika didukung, aplikasi bisa dibuka dan dipakai saat offline: halaman, tampilan, dan data terakhir tersimpan di perangkat. Tampilkan teks status "Offline" yang singkat (tanpa bingkai) saat tidak ada koneksi.
+Interaksi sentuh harus mulus: gulir halaman halus tanpa tersendat, gestur geser (galeri, carousel, laci menu) mengikuti jari dengan lancar dan berhenti rapi pada posisi yang tepat, tidak ada gulir ganda atau halaman terkunci, dan tidak ada lonjakan tampilan saat memuat.
+
+## 9. Integrasi
+
+### CMS: Semua Tampilan Dapat Diatur (superadmin; admin hanya Sesi, Toolkit, dan Jadwal)
+Buat panel CMS di dashboard superadmin. SEMUA elemen tampilan publik dibaca dari pengaturan dan dapat diubah dari CMS, tanpa mengubah kode. Tidak boleh ada teks, warna, label tombol, atau tautan yang tertulis mati di komponen; semuanya memakai nilai pengaturan dengan nilai awal sesuai spesifikasi ini.
+
+Menu CMS (tab) dan isinya:
+1. Identitas: nama program, slogan, label di atas hero, logo, favicon, judul dan deskripsi halaman (SEO dasar), foto hero opsional.
+2. Tema: warna utama, sekunder, aksen, latar, teks, warna tombol, jenis huruf (pilihan daftar), ukuran sudut membulat. Tidak ada pengalih tema terang/gelap. Perubahan langsung terlihat pada pratinjau.
+3. Navigasi: tambah, ubah, urutkan, tampil/sembunyikan item menu (label dan tujuan tautan).
+4. Tombol: semua tombol aksi di tampilan publik (label, tujuan/tautan, warna, tampil/sembunyi, posisi), termasuk "Explore This Week's Topic", "View Documentation", "Get Ready to Speak", dan "Print".
+5. Bagian Halaman: Home, This Week, Speaking Toolkit, Session Archive, About dengan pengaturan urutan, tampil/sembunyi, judul, subjudul, isi teks, dan gambar; termasuk teks tentang program, daftar prinsip, kutipan filosofi, dan teks langkah tantangan bicara.
+6. Fitur: sakelar aktif/nonaktif untuk Print, pencarian Archive, pencarian Toolkit, dan blok Next Session.
+7. Footer dan Kontak: alamat, WhatsApp, Instagram, jadwal singkat, teks hak cipta.
+8. Pratinjau: tombol Pratinjau untuk melihat hasil perubahan. Tidak ada tombol reset atau pulihkan pengaturan di panel mana pun.
+
+Penyimpanan: seluruh pengaturan CMS disimpan sebagai teks pada satu lapisan data pengaturan yang terpisah, awalnya tersimpan di lokal perangkat admin; penyimpanan ke spreadsheet dijelaskan di bagian Sinkronisasi ke Google Sheets. Gambar (logo, favicon, foto hero) diunggah ke Google Drive lewat Apps Script atau memakai tautan langsung, dan hanya ID atau tautannya yang disimpan sebagai teks. Panel CMS juga tunduk pada aturan tanpa teks petunjuk: hanya label tab, label kolom, tombol, dan status. Bila alamat atau kontak footer dikosongkan, bagian itu tidak tampil.
+
+### Sumber Gambar dan File
+Semua gambar yang tampil di aplikasi (logo, favicon, foto hero) dapat diganti dari panel admin dengan dua cara: (1) unggah file ke Google Drive lewat Apps Script, atau (2) tempel tautan langsung dari layanan hosting gambar seperti Unsplash atau ImgBB. Setiap kolom gambar di panel punya dua tab pendek berlabel "Unggah" dan "Tautan", lalu pratinjau dan ikon hapus.
+Simpan sebagai teks: sumber ("drive" atau "tautan") dan nilainya (fileId atau URL). Saat ditampilkan: bila sumber "drive", ambil base64 lewat Apps Script; bila "tautan", pakai URL langsung sebagai src. Bila gambar gagal dimuat, tampilkan kerangka abu netral tanpa teks galat. Setiap kolom gambar punya tombol "Hapus Gambar".
+
+## Unggah File
+Admin dapat mengunggah gambar ke Google Drive lewat Google Apps Script. Periksa jenis dan ukuran file (jenis: JPG, PNG, WEBP; batas: 5 MB), tampilkan pesan hanya bila ditolak. Gambar dikompres otomatis sebelum diunggah. Setelah berhasil, simpan HANYA teks berupa ID file, nama file, dan tautan. Admin bisa menghapus file yang sudah diunggah. Antarmuka unggah hanya berupa tombol "Pilih Gambar", lalu pratinjau dan ikon hapus, dengan indikator putar saat mengunggah. Tidak ada teks di UI yang menyebut Drive, Apps Script, spreadsheet, format, atau batas ukuran.
+
+## Menampilkan Gambar
+Gambar yang tersimpan di Drive ditampilkan otomatis dengan mengubah tautan/ID-nya menjadi base64 lewat Apps Script. Simpan hasilnya selama sesi agar tidak diunduh ulang. Saat memuat tampilkan kerangka abu netral; bila gagal, tampilkan latar abu halus tanpa teks galat. Gambar di luar layar dimuat belakangan.
+
+## Panel Admin: Tab Sinkronisasi (hanya superadmin)
+Buatkan tab "Sinkronisasi" di panel admin yang berisi:
+1. Kode Google Apps Script lengkap yang Anda buat sesuai fungsi yang dibutuhkan aplikasi ini: uji koneksi, unggah file ke folder Google Drive, hapus file, dan ambil gambar agar bisa ditampilkan; tambahkan juga verifikasi login, ubah kata sandi, serta baca, tambah, ubah, dan hapus data di sheet sesuai bagian Sinkronisasi ke Google Sheets. Tampilkan dalam kotak kode dengan tombol "Salin Kode". Bagian atas kode berisi pengaturan (token, ID folder Drive, ID spreadsheet) yang diisi pemilik. Kode harus siap tempel tanpa perubahan lain.
+2. Kolom isian URL Web App, Token, ID Folder Drive, ID Spreadsheet, dan tombol Simpan.
+3. Tombol "Uji Koneksi" dengan teks status biasa tanpa bingkai (Terhubung atau Gagal).
+4. Pengaturan sheet yang dipakai dan daftar koleksi data (Sesi, Toolkit, Jadwal, Pengaturan CMS) dengan tombol "Sinkronkan" dan waktu sinkron terakhir.
+Simpan pengaturan ini pada lapisan data pengaturan aplikasi: URL bersifat publik agar gambar tampil dan data publik bisa ditarik, sedangkan token dan ID hanya untuk staf. Tab ini tanpa teks petunjuk: hanya kotak kode, label, kolom, tombol, dan status.
+
+## Tab Firebase (belum aktif)
+Tambahkan satu tab bernama "Firebase" di panel superadmin yang tampil di daftar tab seperti tab lain, tetapi dalam keadaan NONAKTIF: tampil dengan teks status biasa "Belum aktif" (tanpa bingkai), berisi tombol "Sinkronkan" dan kolom yang semuanya nonaktif (tidak bisa diklik atau diisi) dan tidak melakukan apa pun. Tab ini hanya kerangka tampilan: JANGAN memasang paket atau SDK, JANGAN menulis kode integrasi Firebase atau Firestore, JANGAN meminta pengaktifan Firebase, dan JANGAN menambahkan konfigurasi apa pun untuknya. Tab ini disiapkan agar nanti dapat diaktifkan, dan tanpa teks petunjuk apa pun.
+
+## 10. Batasan
+- Aplikasi berupa aplikasi web sisi klien. Tidak ada fitur suara, pemutar audio, atau pembaca teks. Tidak ada jurnal refleksi, tidak ada bagian suara siswa, tidak ada nama atau foto siswa, tidak ada ranking atau pemenang.
+- Fitur PWA (pemasangan ke layar utama, ikon pasang, layar pembuka) tidak dibuat.
+- Jangan mengintegrasikan atau memasang layanan Firebase atau Firestore, kecuali tab Firebase nonaktif yang hanya berupa kerangka tampilan; seluruh penyimpanan memakai data lokal dan, bila diminta, Google Sheets lewat Apps Script.
+- Jangan menambahkan tombol tema terang/gelap, tombol reset pengaturan, atau teks petunjuk apa pun di tampilan.
+
+## Aturan Wajib Deployment Vercel dan Kebersihan Dependensi
+Pastikan saat proyek di-push ke GitHub dan di-deploy ke Vercel tidak muncul error Command "npm install" exited with 1 maupun "npm run build" exited with 1.
+
+1. Pembuatan berkas .npmrc (wajib): buat berkas .npmrc di root proyek dengan satu baris isi: legacy-peer-deps=true. Ini wajib ada agar Vercel tidak mengalami kegagalan ERESOLVE saat menjalankan "npm install".
+2. Kebersihan package.json: hanya gunakan versi paket resmi dan stabil yang benar-benar ada di npm registry (misalnya typescript wajib versi ^5.x, bukan versi fiktif). Jangan pernah menambahkan paket internal bundler (seperti "esbuild") secara manual ke devDependencies jika proyek menggunakan Vite, karena Vite sudah mengelola versinya sendiri dan akan memicu konflik peer dependency fatal. Jangan memasang dependensi ganda atau paket yang tidak diimpor dalam kode.
+3. Ketepatan case-sensitivity (Linux Vercel): seluruh path impor (import ... from '...') wajib mencocokkan persis huruf besar dan huruf kecil nama berkas, karena server build Vercel berbasis Linux yang membedakan huruf besar dan kecil. Jangan mengimpor berkas atau ikon yang tidak diekspor oleh library.
+4. Uji mandiri sebelum selesai: sebelum menyatakan tugas selesai, jalankan verifikasi build ("npm run build" dan pemeriksaan lint atau typecheck). Pastikan exit status adalah 0 tanpa galat.
+
+## 11. Ringkasan Struktur Aplikasi
+- Halaman publik (satu halaman bergulir dengan alamat per bagian): Home, This Week, Speaking Toolkit, Session Archive (dengan halaman detail sesi), About dan footer; item menu Documentation (tautan eksternal); 404.
+- Panel admin: Dasbor, Sesi, Toolkit, Jadwal, Riwayat, Kata Sandi. Panel superadmin: semua itu ditambah CMS, Sinkronisasi, satu tab nonaktif, Pengguna.
+- Peran: publik, admin, superadmin (login kata sandi saja, "Masuk" sebagai item menu terakhir).
+- Koleksi data (semuanya teks): sesi (nomor, topik, pertanyaan utama, tanggal, mode tanggal, pembicara opsional, status, tautan dokumentasi, ringkasan, pengantar, pertanyaan diskusi, kosakata, ekspresi, tantangan, sentence starters, mini challenge, preparation challenge); toolkit (kategori dan ekspresi dengan arti dan contoh); jadwal (hari, label waktu, jam opsional, tempat, tautan dokumentasi umum, tanda tidak ada sesi dan catatan); pengaturan CMS; riwayat perubahan; pengguna dan hash kata sandi.
+- Modul utama: halaman per bagian publik, halaman detail sesi, panel admin per menu, CMS per tab, tab Sinkronisasi, tab nonaktif, komponen bersama (menu, sidebar HP, tombol, akordeon, formulir, dialog, pengunggah gambar), lapisan data, perhitungan tanggal sesi mendatang, berkas designSystem.
+- Integrasi: Google Apps Script untuk Drive dan Google Sheets (dikerjakan paling akhir); gambar lewat unggah Drive atau tautan langsung; tautan dokumentasi berupa tautan eksternal.
+- Gaya: editorial majalah, hijau #183D35, krem #F2EBDD, emas #D6A64A, terakota #B96549, arang #252623, Playfair Display dan DM Sans, tipografi murni tanpa ikon dekoratif.
+- Batasan: tanpa suara, tanpa jurnal, tanpa data siswa, tanpa PWA, tanpa integrasi layanan lain selain Google Sheets dan Drive, tanpa teks petunjuk.
+
+## 12. Struktur Kode Modular
+Susun kode dalam modul-modul terpisah berupa komponen TSX: satu modul per halaman, per fitur, dan per bagian panel (admin, CMS, superadmin), ditambah komponen bersama yang dipakai ulang (menu, tombol, formulir, kartu, dialog, pengunggah gambar, grafik). Satu berkas satu tanggung jawab, berukuran wajar, bernama jelas, dan dikelompokkan dalam folder yang logis (misalnya halaman, komponen bersama, admin, data, dan konstanta), sehingga satu bagian bisa diubah tanpa menyentuh bagian lain. Pisahkan data dan pengaturan dari tampilan, dan letakkan aturan desain permanen di berkas tersendiri. Hindari satu berkas besar yang berisi banyak hal. Setiap revisi hanya mengubah modul yang diminta, tanpa menyentuh modul lain.
+
+## Sinkronisasi ke Google Sheets (LANGKAH TERAKHIR)
+Kerjakan bagian ini PALING AKHIR, setelah seluruh aplikasi di atas selesai dibangun dan berjalan baik dengan data contoh lokal. Jangan mengubah tampilan dan fitur yang sudah jadi. Patuhi berkas aturan desain permanen (designSystem), dan jangan menambahkan teks petunjuk, penjelasan fungsi, atau keterangan teknis apa pun di tampilan, termasuk soal spreadsheet.
+Semua pertukaran data dengan Google Sheets memakai Google Apps Script (kodenya ada di tab Sinkronisasi), tanpa kecuali:
+- Verifikasi login: aplikasi mengirim kata sandi yang diketik ke Apps Script; Apps Script memeriksanya terhadap hash kata sandi di sheet khusus lalu mengembalikan hasil dan peran. Hash kata sandi tidak pernah dikirim ke aplikasi atau pengunjung. Ubah kata sandi juga diproses oleh Apps Script.
+- Input data: tambah, ubah, dan hapus data aplikasi (sesi, ekspresi toolkit, pengaturan jadwal, tautan dokumentasi, riwayat) dan pengaturan CMS ditulis ke sheet lewat Apps Script.
+- Tarik data: saat halaman dibuka atau disegarkan, aplikasi menarik data terbaru dari sheet lewat Apps Script dan menampilkannya; perubahan yang disimpan admin terlihat di perangkat lain (misalnya HP siswa) dengan cara terbaik menurut Anda. Sesi mendatang, jadwal, dan tautan dokumentasi harus selalu yang terbaru saat halaman dibuka.
+- Hanya teks atau tautan berupa teks yang disimpan di sheet; file tetap lewat Google Drive dengan hanya ID dan tautannya yang disimpan. Data sensitif (hash kata sandi, token) hanya diproses di dalam Apps Script dan tidak dikembalikan kepada aplikasi atau pengunjung.
+- Aksi yang mengubah data atau mengambil data non-publik hanya diterima Apps Script bila disertai sesi login yang sah; data publik boleh ditarik tanpa login.
+
+### Tombol Simpan Pengaturan (hemat kuota)
+Pada setiap tab atau menu pengaturan di CMS dan panel admin (Sesi, Toolkit, Jadwal, dan tab CMS), sediakan TEPAT SATU tombol "Simpan" yang menyimpan semua perubahan pada tab itu ke spreadsheet lewat Apps Script, baik mengedit, menambah, maupun menghapus.
+- JANGAN PERNAH menyimpan pengaturan ke spreadsheet secara otomatis (tidak saat mengetik, berpindah tab, atau menutup halaman). Penyimpanan hanya terjadi saat tombol Simpan ditekan.
+- Sebelum Simpan ditekan, semua perubahan (termasuk menambah dan menghapus) hanya tersimpan di penyimpanan lokal perangkat sebagai draf. Tombol Simpan hanya menulis bagian yang berubah, bukan seluruh pengaturan, dan nonaktif bila tidak ada perubahan.
+- Yang tersimpan hanya teks atau tautan berupa teks; tidak pernah file, gambar, atau base64.
+- Setelah Simpan berhasil, muncul notifikasi singkat "Berhasil disimpan" yang hilang sendiri setelah 0,5 detik.
+- Tidak boleh ada tombol reset atau pulihkan pengaturan di panel admin.
+
+PENTING: tampilan aplikasi harus bersih dan profesional seperti produk jadi, sempurna dan responsif di layar HP (menu, tombol, dan semua elemen rapi, proporsional, tidak ada yang tersembunyi), tanpa satu pun teks petunjuk, penjelasan fungsi, atau keterangan teknis (termasuk soal unggah file, Drive, Apps Script, atau spreadsheet). Hanya label, konten, pesan galat, dan notifikasi hasil aksi yang boleh tampil. Tombol, menu, dan kolom harus mudah dipakai dan dipahami lewat label yang jelas saja, tanpa ikon dekoratif dan tanpa badge atau chip berbentuk tombol palsu.

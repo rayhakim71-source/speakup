@@ -1,0 +1,6 @@
+{
+  "name": "SPEAK UP! - English Speaking Club, SMP Negeri 1 Bengkalis",
+  "description": "A space where students speak English, explore ideas, share perspectives, and grow together — one conversation at a time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
