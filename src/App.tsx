@@ -115,46 +115,62 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [auth.isLoggedIn]);
 
-  // Pull synced public data from Google Sheets on initial load
+  // Pull synced public data from Google Sheets on load & tab focus
   useEffect(() => {
     const activeSync = getStoredSync();
     if (!activeSync.webAppUrl) return;
     let cancelled = false;
-    postToAppsScript(activeSync.webAppUrl, { action: 'getPublicData' })
-      .then((res) => {
-        if (cancelled || !res || !res.success) return;
-        if (Array.isArray(res.sessions) && res.sessions.length > 0) {
-          setSessions((prev) => {
-            const drafts = prev.filter((s) => s.status === 'Draf');
-            const merged = [...drafts, ...res.sessions.filter((s: SessionData) => s.status !== 'Draf')];
-            saveStoredSessions(merged);
-            return merged;
-          });
-        }
-        if (Array.isArray(res.toolkit) && res.toolkit.length > 0) {
-          setToolkit(res.toolkit);
-          saveStoredToolkit(res.toolkit);
-        }
-        if (res.schedule) {
-          setSchedule((prev) => {
-            const merged = { ...prev, ...res.schedule };
-            saveStoredSchedule(merged);
-            return merged;
-          });
-        }
-        if (res.cms) {
-          setCms((prev) => {
-            const merged = { ...prev, ...res.cms };
-            saveStoredCms(merged);
-            return merged;
-          });
-        }
-      })
-      .catch(() => {
-        // fallback cleanly to local storage when offline
-      });
+
+    const loadPublicData = () => {
+      postToAppsScript(activeSync.webAppUrl, { action: 'getPublicData' })
+        .then((res) => {
+          if (cancelled || !res || !res.success) return;
+          if (Array.isArray(res.sessions) && res.sessions.length > 0) {
+            setSessions((prev) => {
+              const drafts = prev.filter((s) => s.status === 'Draf');
+              const merged = [...drafts, ...res.sessions.filter((s: SessionData) => s.status !== 'Draf')];
+              saveStoredSessions(merged);
+              return merged;
+            });
+          }
+          if (Array.isArray(res.toolkit) && res.toolkit.length > 0) {
+            setToolkit(res.toolkit);
+            saveStoredToolkit(res.toolkit);
+          }
+          if (res.schedule) {
+            setSchedule((prev) => {
+              const merged = { ...prev, ...res.schedule };
+              saveStoredSchedule(merged);
+              return merged;
+            });
+          }
+          if (res.cms) {
+            setCms((prev) => {
+              const merged = { ...prev, ...res.cms };
+              saveStoredCms(merged);
+              return merged;
+            });
+          }
+        })
+        .catch(() => {
+          // fallback cleanly to local storage when offline
+        });
+    };
+
+    loadPublicData();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadPublicData();
+      }
+    };
+    window.addEventListener('focus', loadPublicData);
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', loadPublicData);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

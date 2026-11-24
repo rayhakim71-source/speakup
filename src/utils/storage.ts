@@ -22,6 +22,7 @@ export async function postToAppsScript(webAppUrl: string, payload: Record<string
   const res = await fetch(webAppUrl, {
     method: 'POST',
     redirect: 'follow',
+    cache: 'no-store',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
   });
