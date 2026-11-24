@@ -28,6 +28,10 @@ export const AdminProposals: React.FC<AdminProposalsProps> = ({
   const [loadingSheet, setLoadingSheet] = useState(false);
   const [fetchStatus, setFetchStatus] = useState<string | null>(null);
   const [detailProposal, setDetailProposal] = useState<TopicProposal | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'approve' | 'reject' | 'convert';
+    proposal: TopicProposal;
+  } | null>(null);
 
   const onSaveProposalsRef = useRef(onSaveProposals);
   onSaveProposalsRef.current = onSaveProposals;
@@ -95,8 +99,24 @@ export const AdminProposals: React.FC<AdminProposalsProps> = ({
     }
   };
 
-  const handleApprove = async (p: TopicProposal) => {
-    if (confirm('Setujui usulan ini?')) {
+  const handleApprove = (p: TopicProposal) => {
+    setPendingAction({ type: 'approve', proposal: p });
+  };
+
+  const handleReject = (p: TopicProposal) => {
+    setPendingAction({ type: 'reject', proposal: p });
+  };
+
+  const handleConvertToSession = (p: TopicProposal) => {
+    setPendingAction({ type: 'convert', proposal: p });
+  };
+
+  const executePendingAction = async () => {
+    if (!pendingAction) return;
+    const { type, proposal: p } = pendingAction;
+    setPendingAction(null);
+
+    if (type === 'approve') {
       onUpdateProposalStatus(p.id, 'Disetujui');
       if (detailProposal?.id === p.id) {
         setDetailProposal({ ...p, status: 'Disetujui' });
@@ -104,11 +124,7 @@ export const AdminProposals: React.FC<AdminProposalsProps> = ({
       addHistoryItem(role, 'Usulan', `Menyetujui usulan topik: ${p.usulanTopik}`);
       showToast('Berhasil disimpan');
       await updateSheetStatus(p, 'Disetujui');
-    }
-  };
-
-  const handleReject = async (p: TopicProposal) => {
-    if (confirm('Tolak usulan ini?')) {
+    } else if (type === 'reject') {
       onUpdateProposalStatus(p.id, 'Ditolak');
       if (detailProposal?.id === p.id) {
         setDetailProposal({ ...p, status: 'Ditolak' });
@@ -116,16 +132,54 @@ export const AdminProposals: React.FC<AdminProposalsProps> = ({
       addHistoryItem(role, 'Usulan', `Menolak usulan topik: ${p.usulanTopik}`);
       showToast('Berhasil disimpan');
       await updateSheetStatus(p, 'Ditolak');
-    }
-  };
-
-  const handleConvertToSession = (p: TopicProposal) => {
-    if (confirm('Jadikan sesi baru (Draf)?')) {
+    } else if (type === 'convert') {
       onCreateSessionFromProposal(p);
       addHistoryItem(role, 'Usulan', `Mengubah usulan menjadi sesi Draf: ${p.usulanTopik}`);
       showToast('Berhasil disimpan');
+      await updateSheetStatus(p, 'Disetujui');
     }
   };
+
+  const confirmModal = pendingAction ? (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-[#F2EBDD] text-[#252623] w-full max-w-sm p-6 rounded shadow-xl border border-[#D6A64A]/30 space-y-5">
+        <h3 className="font-serif font-bold text-xl text-[#183D35]">
+          {pendingAction.type === 'approve'
+            ? 'Setujui usulan?'
+            : pendingAction.type === 'reject'
+            ? 'Tolak usulan?'
+            : 'Jadikan sesi Draf?'}
+        </h3>
+        <p className="text-sm text-[#252623]/80 line-clamp-2">{pendingAction.proposal.usulanTopik}</p>
+        <div className="flex justify-end space-x-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setPendingAction(null)}
+            className="px-4 py-2 min-h-[44px] border border-[#252623]/30 rounded text-sm hover:bg-[#252623]/5"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onClick={executePendingAction}
+            className={`px-5 py-2 min-h-[44px] rounded text-sm font-medium ${
+              pendingAction.type === 'reject'
+                ? 'bg-red-700 text-white hover:bg-red-800'
+                : pendingAction.type === 'convert'
+                ? 'bg-[#D6A64A] text-[#183D35] hover:bg-[#D6A64A]/90'
+                : 'bg-[#183D35] text-[#F2EBDD] hover:bg-[#183D35]/90'
+            }`}
+          >
+            {pendingAction.type === 'approve'
+              ? 'Setujui'
+              : pendingAction.type === 'reject'
+              ? 'Tolak'
+              : 'Jadikan Sesi'}
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   if (detailProposal) {
     return (
@@ -189,6 +243,7 @@ export const AdminProposals: React.FC<AdminProposalsProps> = ({
             </button>
           </div>
         </div>
+        {confirmModal}
       </div>
     );
   }
@@ -302,6 +357,7 @@ export const AdminProposals: React.FC<AdminProposalsProps> = ({
           ))}
         </div>
       )}
+      {confirmModal}
     </div>
   );
 };

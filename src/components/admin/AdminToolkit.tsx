@@ -1,6 +1,6 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ToolkitCategory, ExpressionItem } from '../../types';
 
 interface AdminToolkitProps {
@@ -13,6 +13,10 @@ export const AdminToolkit: React.FC<AdminToolkitProps> = ({ toolkit, onSaveToolk
   const [categories, setCategories] = useState<ToolkitCategory[]>(toolkit);
   const [selectedCatId, setSelectedCatId] = useState<string>(toolkit[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    setCategories(toolkit);
+  }, [toolkit]);
 
   const activeCategory = categories.find((c) => c.id === selectedCatId) || categories[0];
 

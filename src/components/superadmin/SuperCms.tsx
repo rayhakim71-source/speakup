@@ -1,6 +1,6 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CmsSettings } from '../../types';
 
 interface SuperCmsProps {
@@ -12,6 +12,10 @@ interface SuperCmsProps {
 export const SuperCms: React.FC<SuperCmsProps> = ({ cms, onSaveCms, showToast }) => {
   const [form, setForm] = useState<CmsSettings>(cms);
   const [activeTab, setActiveTab] = useState<'identity' | 'nav' | 'buttons' | 'footer'>('identity');
+
+  useEffect(() => {
+    setForm(cms);
+  }, [cms]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

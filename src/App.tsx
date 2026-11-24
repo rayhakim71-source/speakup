@@ -14,6 +14,7 @@ import {
   saveStoredCms,
   getStoredHistory,
   getStoredSync,
+  saveStoredSync,
   getStoredAuth,
   clearStoredAuth,
   addHistoryItem,
@@ -157,6 +158,30 @@ export default function App() {
     };
   }, []);
 
+  // When staff is logged in, also pull full Sesi (including Draf) from Google Sheets
+  useEffect(() => {
+    if (!auth.isLoggedIn) return;
+    const activeSync = sync.webAppUrl ? sync : getStoredSync();
+    if (!activeSync.webAppUrl || !activeSync.token) return;
+    let cancelled = false;
+    postToAppsScript(activeSync.webAppUrl, {
+      action: 'getData',
+      token: activeSync.token,
+      collection: 'Sesi',
+    })
+      .then((res) => {
+        if (cancelled || !res || !res.success || !Array.isArray(res.payload) || res.payload.length === 0) return;
+        setSessions(res.payload);
+        saveStoredSessions(res.payload);
+      })
+      .catch(() => {
+        // ignore if offline
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.isLoggedIn, sync.webAppUrl, sync.token]);
+
   const handleNavigate = (href: string) => {
     if (href.startsWith('#')) {
       window.location.hash = href;
@@ -182,28 +207,58 @@ export default function App() {
   const hasDocumentation = Boolean(upcomingSession?.tautanDokumentasi || schedule.generalDocLink);
   const docLink = upcomingSession?.tautanDokumentasi || schedule.generalDocLink;
 
+  const syncCollectionToSheet = (collection: 'Sesi' | 'Toolkit' | 'Pengaturan', payload: unknown) => {
+    const activeSync = sync.webAppUrl ? sync : getStoredSync();
+    if (!activeSync.webAppUrl || !activeSync.token) return;
+    postToAppsScript(activeSync.webAppUrl, {
+      action: 'syncData',
+      token: activeSync.token,
+      collection,
+      payload,
+    })
+      .then((res) => {
+        if (res && res.success) {
+          const now = new Date().toISOString().replace('T', ' ').substring(0, 16);
+          const updatedSync = { ...activeSync, lastSyncTime: now };
+          setSync(updatedSync);
+          saveStoredSync(updatedSync);
+        } else {
+          showToast(res?.error || 'Gagal sinkron');
+        }
+      })
+      .catch(() => {
+        showToast('Gagal sinkron');
+      });
+  };
+
   // Save handlers
-  const handleSaveSessions = (updated: SessionData[]) => {
+  const handleSaveSessions = (updated: SessionData[], pushToSheet = false) => {
     setSessions(updated);
     saveStoredSessions(updated);
+    if (pushToSheet) {
+      syncCollectionToSheet('Sesi', updated);
+    }
   };
 
   const handleSaveToolkit = (updated: ToolkitCategory[]) => {
     setToolkit(updated);
     saveStoredToolkit(updated);
     addHistoryItem(auth.role, 'Toolkit', 'Speaking Toolkit diperbarui.');
+    syncCollectionToSheet('Toolkit', updated);
   };
 
   const handleSaveSchedule = (updated: ScheduleSettings) => {
     setSchedule(updated);
     saveStoredSchedule(updated);
     addHistoryItem(auth.role, 'Jadwal', 'Pengaturan jadwal diperbarui.');
+    syncCollectionToSheet('Pengaturan', { schedule: updated, cms });
   };
 
   const handleSaveCms = (updated: CmsSettings) => {
     setCms(updated);
     saveStoredCms(updated);
     addHistoryItem(auth.role, 'CMS', 'Pengaturan CMS diperbarui.');
+    syncCollectionToSheet('Pengaturan', { schedule, cms: updated });
   };
 
   const handleUpdateProposalStatus = (id: string, status: 'Baru' | 'Disetujui' | 'Ditolak') => {
@@ -218,7 +273,7 @@ export default function App() {
       id: 'ses-' + Date.now(),
       number: nextNum,
       topik: proposal.usulanTopik,
-      pertanyaanUtama: proposal.pertanyaanUtama,
+      pertanyaanUtama: proposal.pertanyaanUtama || proposal.diskusi1 || '',
       tanggal: 'Saturday, upcoming',
       dateMode: 'auto',
       pembicara: proposal.namaDepan,
@@ -234,7 +289,7 @@ export default function App() {
       preparationChallenge: '',
     };
     const updatedSessions = [newSes, ...sessions];
-    handleSaveSessions(updatedSessions);
+    handleSaveSessions(updatedSessions, true);
     handleUpdateProposalStatus(proposal.id, 'Disetujui');
     setEditingSessionIdFromProposal(newSes.id);
     setAdminMenu('sessions');
@@ -249,13 +304,13 @@ export default function App() {
     } else {
       updated = [session, ...sessions];
     }
-    handleSaveSessions(updated);
+    handleSaveSessions(updated, true);
     addHistoryItem(auth.role, 'Sesi', 'Daftar sesi diperbarui.');
   };
 
   const handleDeleteSession = (id: string) => {
     const updated = sessions.filter((s) => s.id !== id);
-    handleSaveSessions(updated);
+    handleSaveSessions(updated, true);
     addHistoryItem(auth.role, 'Sesi', 'Sesi dihapus.');
   };
 
@@ -270,7 +325,7 @@ export default function App() {
       }
       return s;
     });
-    handleSaveSessions(updated);
+    handleSaveSessions(updated, true);
     addHistoryItem(auth.role, 'Sesi', 'Status sesi diubah.');
     showToast('Berhasil disimpan');
   };

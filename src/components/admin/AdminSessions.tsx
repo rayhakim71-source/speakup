@@ -27,6 +27,7 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
   const [currentSession, setCurrentSession] = useState<SessionData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Mendatang' | 'Arsip' | 'Draf'>('All');
+  const [deleteTarget, setDeleteTarget] = useState<SessionData | null>(null);
 
   useEffect(() => {
     if (initialEditSessionId) {
@@ -72,6 +73,7 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
 
       {isEditing ? (
         <AdminSessionForm
+          key={currentSession?.id || 'new'}
           session={currentSession}
           onSave={(ses) => {
             onSaveSession(ses);
@@ -154,12 +156,7 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
                             Ubah
                           </button>
                           <button
-                            onClick={() => {
-                              if (confirm('Hapus sesi ini?')) {
-                                onDeleteSession(session.id);
-                                showToast('Berhasil dihapus');
-                              }
-                            }}
+                            onClick={() => setDeleteTarget(session)}
                             className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
                           >
                             Hapus
@@ -170,6 +167,35 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-[#F2EBDD] text-[#252623] w-full max-w-sm p-6 rounded shadow-xl border border-[#D6A64A]/30 space-y-5">
+            <h3 className="font-serif font-bold text-xl text-[#183D35]">Hapus sesi?</h3>
+            <p className="text-sm text-[#252623]/80 line-clamp-2">{deleteTarget.topik}</p>
+            <div className="flex justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 min-h-[44px] border border-[#252623]/30 rounded text-sm hover:bg-[#252623]/5"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteSession(deleteTarget.id);
+                  setDeleteTarget(null);
+                  showToast('Berhasil dihapus');
+                }}
+                className="px-5 py-2 min-h-[44px] bg-red-700 text-white rounded text-sm font-medium hover:bg-red-800"
+              >
+                Hapus
+              </button>
             </div>
           </div>
         </div>

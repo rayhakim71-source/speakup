@@ -1,6 +1,6 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScheduleSettings } from '../../types';
 
 interface AdminScheduleProps {
@@ -11,6 +11,10 @@ interface AdminScheduleProps {
 
 export const AdminSchedule: React.FC<AdminScheduleProps> = ({ schedule, onSaveSchedule, showToast }) => {
   const [form, setForm] = useState<ScheduleSettings>(schedule);
+
+  useEffect(() => {
+    setForm(schedule);
+  }, [schedule]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
