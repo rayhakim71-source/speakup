@@ -19,8 +19,10 @@ import {
   clearStoredAuth,
   addHistoryItem,
   postToAppsScript,
+  getStoredGallery,
+  saveStoredGallery,
 } from './utils/storage';
-import { SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, TopicProposal, SyncSettings } from './types';
+import { SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, TopicProposal, SyncSettings, GalleryPhoto } from './types';
 import { Header } from './components/common/Header';
 import { Footer } from './components/common/Footer';
 import { MobileSidebar } from './components/common/MobileSidebar';
@@ -55,6 +57,7 @@ export default function App() {
   const [proposals, setProposals] = useState<TopicProposal[]>(getStoredProposals());
   const [cms, setCms] = useState<CmsSettings>(getStoredCms());
   const [sync, setSync] = useState<SyncSettings>(getStoredSync());
+  const [gallery, setGallery] = useState<GalleryPhoto[]>(getStoredGallery());
   const [auth, setAuth] = useState(getStoredAuth());
 
   const [currentView, setCurrentView] = useState<'public' | 'session-detail' | 'admin'>('public');
@@ -151,6 +154,10 @@ export default function App() {
               return merged;
             });
           }
+          if (Array.isArray(res.gallery) && !getStoredAuth().isLoggedIn) {
+            setGallery(res.gallery);
+            saveStoredGallery(res.gallery);
+          }
         })
         .catch(() => {
           // fallback cleanly to local storage when offline
@@ -174,27 +181,56 @@ export default function App() {
     };
   }, []);
 
-  // When staff is logged in, also pull full Sesi (including Draf) from Google Sheets
+  // When staff is logged in, also pull full Sesi (including Draf) and Galeri from Google Sheets
   useEffect(() => {
     if (!auth.isLoggedIn) return;
     const activeSync = sync.webAppUrl ? sync : getStoredSync();
     if (!activeSync.webAppUrl || !activeSync.token) return;
     let cancelled = false;
-    postToAppsScript(activeSync.webAppUrl, {
-      action: 'getData',
-      token: activeSync.token,
-      collection: 'Sesi',
-    })
-      .then((res) => {
-        if (cancelled || !res || !res.success || !Array.isArray(res.payload) || res.payload.length === 0) return;
-        setSessions(res.payload);
-        saveStoredSessions(res.payload);
+
+    const loadStaffData = () => {
+      postToAppsScript(activeSync.webAppUrl, {
+        action: 'getData',
+        token: activeSync.token,
+        collection: 'Sesi',
       })
-      .catch(() => {
-        // ignore if offline
-      });
+        .then((res) => {
+          if (cancelled || !res || !res.success || !Array.isArray(res.payload) || res.payload.length === 0) return;
+          setSessions(res.payload);
+          saveStoredSessions(res.payload);
+        })
+        .catch(() => {
+          // ignore if offline
+        });
+      postToAppsScript(activeSync.webAppUrl, {
+        action: 'getData',
+        token: activeSync.token,
+        collection: 'Galeri',
+      })
+        .then((res) => {
+          if (cancelled || !res || !res.success || !Array.isArray(res.payload)) return;
+          setGallery(res.payload);
+          saveStoredGallery(res.payload);
+        })
+        .catch(() => {
+          // ignore if offline
+        });
+    };
+
+    loadStaffData();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadStaffData();
+      }
+    };
+    window.addEventListener('focus', loadStaffData);
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', loadStaffData);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [auth.isLoggedIn, sync.webAppUrl, sync.token]);
 
@@ -325,9 +361,62 @@ export default function App() {
   };
 
   const handleDeleteSession = (id: string) => {
+    const targetSession = sessions.find((s) => s.id === id);
     const updated = sessions.filter((s) => s.id !== id);
     handleSaveSessions(updated, true);
     addHistoryItem(auth.role, 'Sesi', 'Sesi dihapus.');
+
+    const hasSessionPhotos = gallery.some((p) => p.idSesi === id);
+    if (hasSessionPhotos) {
+      const remainingPhotos = gallery.filter((p) => p.idSesi !== id);
+      setGallery(remainingPhotos);
+      saveStoredGallery(remainingPhotos);
+      addHistoryItem(auth.role, 'Foto', `Menghapus seluruh foto sesi: ${targetSession?.topik || id}`);
+    }
+
+    const activeSync = sync.webAppUrl ? sync : getStoredSync();
+    if (activeSync.webAppUrl && activeSync.token) {
+      postToAppsScript(activeSync.webAppUrl, {
+        action: 'galeriHapus',
+        token: activeSync.token,
+        idSesi: id,
+      }).catch(() => {
+        // ignore if offline
+      });
+    }
+  };
+
+  const handlePhotoAdded = (photo: GalleryPhoto) => {
+    setGallery((prev) => {
+      const next = [...prev, photo];
+      saveStoredGallery(next);
+      return next;
+    });
+  };
+
+  const handlePhotoUpdated = (photo: GalleryPhoto) => {
+    setGallery((prev) => {
+      const next = prev.map((p) => (p.id === photo.id ? photo : p));
+      saveStoredGallery(next);
+      return next;
+    });
+  };
+
+  const handlePhotosReordered = (updatedSessionPhotos: GalleryPhoto[]) => {
+    setGallery((prev) => {
+      const map = new Map(updatedSessionPhotos.map((p) => [p.id, p]));
+      const next = prev.map((p) => map.get(p.id) || p);
+      saveStoredGallery(next);
+      return next;
+    });
+  };
+
+  const handlePhotoDeleted = (photoId: string) => {
+    setGallery((prev) => {
+      const next = prev.filter((p) => p.id !== photoId);
+      saveStoredGallery(next);
+      return next;
+    });
   };
 
   const handleToggleStatus = (id: string) => {
@@ -365,11 +454,18 @@ export default function App() {
         {adminMenu === 'sessions' && (
           <AdminSessions
             sessions={sessions}
+            gallery={gallery}
+            sync={sync}
+            role={auth.role}
             initialEditSessionId={editingSessionIdFromProposal}
             onClearInitialEdit={() => setEditingSessionIdFromProposal(null)}
             onSaveSession={handleSaveSingleSession}
             onDeleteSession={handleDeleteSession}
             onToggleStatus={handleToggleStatus}
+            onPhotoAdded={handlePhotoAdded}
+            onPhotoUpdated={handlePhotoUpdated}
+            onPhotosReordered={handlePhotosReordered}
+            onPhotoDeleted={handlePhotoDeleted}
             showToast={showToast}
           />
         )}
@@ -401,6 +497,7 @@ export default function App() {
         {adminMenu === 'sync' && auth.role === 'superadmin' && (
           <SuperSync
             sessions={sessions}
+            gallery={gallery}
             toolkit={toolkit}
             schedule={schedule}
             cms={cms}
@@ -408,6 +505,10 @@ export default function App() {
             onProposalsLoaded={(props) => {
               setProposals(props);
               saveStoredProposals(props);
+            }}
+            onGalleryLoaded={(loadedGallery) => {
+              setGallery(loadedGallery);
+              saveStoredGallery(loadedGallery);
             }}
             showToast={showToast}
           />
@@ -425,6 +526,8 @@ export default function App() {
         <SessionDetail
           session={selectedArchivedSession}
           schedule={schedule}
+          photos={gallery}
+          webAppUrl={sync.webAppUrl}
           onBack={() => {
             setCurrentView('public');
             setPublicView('archive');
@@ -476,6 +579,8 @@ export default function App() {
         {publicView === 'archive' && (
           <ArchiveSection
             sessions={sessions}
+            gallery={gallery}
+            webAppUrl={sync.webAppUrl}
             onSelectSession={(id) => {
               window.location.hash = `#session/${id}`;
             }}

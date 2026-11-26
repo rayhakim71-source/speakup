@@ -1,27 +1,31 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
 import React, { useState } from 'react';
-import { SyncSettings, SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, TopicProposal } from '../../types';
+import { SyncSettings, SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, TopicProposal, GalleryPhoto } from '../../types';
 import { getStoredSync, saveStoredSync, addHistoryItem, postToAppsScript } from '../../utils/storage';
 import { APPS_SCRIPT_CODE } from '../../utils/appsScriptCode';
 
 interface SuperSyncProps {
   sessions: SessionData[];
+  gallery: GalleryPhoto[];
   toolkit: ToolkitCategory[];
   schedule: ScheduleSettings;
   cms: CmsSettings;
   onSyncChange: (sync: SyncSettings) => void;
   onProposalsLoaded: (proposals: TopicProposal[]) => void;
+  onGalleryLoaded: (gallery: GalleryPhoto[]) => void;
   showToast: (msg: string) => void;
 }
 
 export const SuperSync: React.FC<SuperSyncProps> = ({
   sessions,
+  gallery,
   toolkit,
   schedule,
   cms,
   onSyncChange,
   onProposalsLoaded,
+  onGalleryLoaded,
   showToast,
 }) => {
   const [sync, setSync] = useState<SyncSettings>(getStoredSync());
@@ -91,6 +95,30 @@ export const SuperSync: React.FC<SuperSyncProps> = ({
         if (res.success && Array.isArray(res.proposals)) {
           onProposalsLoaded(res.proposals);
           ok = true;
+        }
+      } else if (collectionName === 'Galeri') {
+        const res = await postToAppsScript(sync.webAppUrl, {
+          action: 'getData',
+          token: sync.token,
+          collection: 'Galeri',
+        });
+        if (res.success) {
+          const remoteList: GalleryPhoto[] = Array.isArray(res.payload) ? res.payload : [];
+          const remoteIds = new Set(remoteList.map((p) => p.id));
+          const localOnly = gallery.filter((p) => !remoteIds.has(p.id));
+          const merged = [...remoteList, ...localOnly].sort((a, b) => a.urutan - b.urutan);
+          onGalleryLoaded(merged);
+          if (localOnly.length > 0) {
+            const pushRes = await postToAppsScript(sync.webAppUrl, {
+              action: 'syncData',
+              token: sync.token,
+              collection: 'Galeri',
+              payload: merged,
+            });
+            ok = Boolean(pushRes.success);
+          } else {
+            ok = true;
+          }
         }
       } else if (collectionName === 'Sesi') {
         const res = await postToAppsScript(sync.webAppUrl, {
@@ -220,7 +248,7 @@ export const SuperSync: React.FC<SuperSyncProps> = ({
       <div className="bg-white border border-[#252623]/10 p-8 rounded shadow-sm space-y-6">
         <h3 className="font-serif font-bold text-xl text-[#183D35]">Koleksi Data</h3>
         <div className="space-y-4">
-          {['Sesi', 'Usulan', 'Toolkit', 'Jadwal', 'Pengaturan CMS'].map((coll) => (
+          {['Sesi', 'Usulan', 'Galeri', 'Toolkit', 'Jadwal', 'Pengaturan CMS'].map((coll) => (
             <div key={coll} className="flex justify-between items-center bg-[#F2EBDD]/30 p-4 rounded border border-[#252623]/10">
               <div>
                 <span className="font-medium text-sm text-[#183D35]">{coll}</span>

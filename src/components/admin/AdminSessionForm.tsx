@@ -1,15 +1,36 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
 import React, { useState } from 'react';
-import { SessionData, VocabularyItem, ExpressionItem } from '../../types';
+import { SessionData, VocabularyItem, ExpressionItem, GalleryPhoto, SyncSettings } from '../../types';
+import { AdminSessionPhotos } from './AdminSessionPhotos';
 
 interface AdminSessionFormProps {
   session?: SessionData | null;
+  photos: GalleryPhoto[];
+  sync: SyncSettings;
+  role: string;
+  onPhotoAdded: (photo: GalleryPhoto) => void;
+  onPhotoUpdated: (photo: GalleryPhoto) => void;
+  onPhotosReordered: (updatedSessionPhotos: GalleryPhoto[]) => void;
+  onPhotoDeleted: (photoId: string) => void;
   onSave: (session: SessionData) => void;
   onCancel: () => void;
+  showToast: (msg: string) => void;
 }
 
-export const AdminSessionForm: React.FC<AdminSessionFormProps> = ({ session, onSave, onCancel }) => {
+export const AdminSessionForm: React.FC<AdminSessionFormProps> = ({
+  session,
+  photos,
+  sync,
+  role,
+  onPhotoAdded,
+  onPhotoUpdated,
+  onPhotosReordered,
+  onPhotoDeleted,
+  onSave,
+  onCancel,
+  showToast,
+}) => {
   const [number, setNumber] = useState(session?.number || 'Session 06');
   const [topik, setTopik] = useState(session?.topik || '');
   const [pertanyaanUtama, setPertanyaanUtama] = useState(session?.pertanyaanUtama || '');
@@ -280,6 +301,22 @@ export const AdminSessionForm: React.FC<AdminSessionFormProps> = ({ session, onS
           </div>
         ))}
       </div>
+
+      {/* Photo Documentation (only after session is saved) */}
+      {session?.id && (
+        <AdminSessionPhotos
+          sessionId={session.id}
+          sessionTopik={topik || session.topik}
+          photos={photos}
+          sync={sync}
+          role={role}
+          onPhotoAdded={onPhotoAdded}
+          onPhotoUpdated={onPhotoUpdated}
+          onPhotosReordered={onPhotosReordered}
+          onPhotoDeleted={onPhotoDeleted}
+          showToast={showToast}
+        />
+      )}
 
       {/* Actions */}
       <div className="flex justify-end space-x-4 pt-6 border-t border-[#252623]/10">

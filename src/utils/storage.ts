@@ -1,6 +1,6 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
-import { SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, HistoryItem, SyncSettings, TopicProposal, Role } from '../types';
+import { SessionData, ToolkitCategory, ScheduleSettings, CmsSettings, HistoryItem, SyncSettings, TopicProposal, Role, GalleryPhoto } from '../types';
 import { initialSessions, initialToolkit, initialSchedule, initialCms, initialProposals } from '../data/initialData';
 
 const KEYS = {
@@ -13,6 +13,7 @@ const KEYS = {
   auth: 'speakup_auth_v1',
   passwords: 'speakup_passwords_v1',
   proposals: 'speakup_proposals_v1',
+  gallery: 'speakup_gallery_v1',
 };
 
 const OLD_WEB_APP_URL = 'https://script.google.com/a/macros/guru.smp.belajar.id/s/AKfycbzmrZU3lIcpK41IWf7xjYWO8J_XCSi4GKh5yOEHcqohtjHffgwmBP37B7QpIPEA_rDAbw/exec';
@@ -179,4 +180,121 @@ export const saveStoredAuth = (auth: AuthState) => {
 
 export const clearStoredAuth = () => {
   localStorage.removeItem(KEYS.auth);
+};
+
+// Gallery storage & Drive photo helpers
+export const getStoredGallery = (): GalleryPhoto[] => {
+  const data = localStorage.getItem(KEYS.gallery);
+  if (!data) return [];
+  try {
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+export const saveStoredGallery = (gallery: GalleryPhoto[]) => {
+  localStorage.setItem(KEYS.gallery, JSON.stringify(gallery));
+};
+
+export const getDriveThumbUrl = (fileId: string, size: 600 | 1600): string => {
+  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w${size}`;
+};
+
+const galleryFallbackMemoryCache = new Map<string, string>();
+const galleryFallbackInFlight = new Map<string, Promise<string | null>>();
+
+export const getCachedGalleryImage = (fileId: string): string | null => {
+  if (galleryFallbackMemoryCache.has(fileId)) {
+    return galleryFallbackMemoryCache.get(fileId) || null;
+  }
+  try {
+    const cached = sessionStorage.getItem(`speakup_img_${fileId}`);
+    if (cached) {
+      galleryFallbackMemoryCache.set(fileId, cached);
+      return cached;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return null;
+};
+
+export const fetchGalleryImageFallback = async (webAppUrl: string, fileId: string): Promise<string | null> => {
+  const existing = getCachedGalleryImage(fileId);
+  if (existing) return existing;
+  if (!webAppUrl || !fileId) return null;
+
+  const pending = galleryFallbackInFlight.get(fileId);
+  if (pending) return pending;
+
+  const task = postToAppsScript(webAppUrl, { action: 'galeriGambar', fileId })
+    .then((res) => {
+      if (res && res.success && typeof res.dataUrl === 'string' && res.dataUrl.startsWith('data:image/')) {
+        galleryFallbackMemoryCache.set(fileId, res.dataUrl);
+        try {
+          sessionStorage.setItem(`speakup_img_${fileId}`, res.dataUrl);
+        } catch {
+          // ignore sessionStorage quota errors
+        }
+        return res.dataUrl;
+      }
+      return null;
+    })
+    .catch(() => null)
+    .finally(() => {
+      galleryFallbackInFlight.delete(fileId);
+    });
+
+  galleryFallbackInFlight.set(fileId, task);
+  return task;
+};
+
+export const compressImageFile = (
+  file: File
+): Promise<{ base64: string; mimeType: string; fileName: string }> => {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const maxDim = 1600;
+      const longest = Math.max(img.width, img.height);
+      const scale = longest > maxDim ? maxDim / longest : 1;
+      const targetW = Math.max(1, Math.round(img.width * scale));
+      const targetH = Math.max(1, Math.round(img.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Canvas context unavailable'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+
+      let quality = 0.8;
+      let dataUrl = canvas.toDataURL('image/jpeg', quality);
+      // Target < 1 MB
+      while (dataUrl.length * 0.75 > 980 * 1024 && quality > 0.35) {
+        quality = Number((quality - 0.1).toFixed(2));
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+      }
+
+      const base64 = dataUrl.split(',')[1] || '';
+      const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo';
+      resolve({
+        base64,
+        mimeType: 'image/jpeg',
+        fileName: `${baseName}.jpg`,
+      });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Invalid image file'));
+    };
+    img.src = objectUrl;
+  });
 };

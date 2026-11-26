@@ -109,3 +109,12 @@ export interface SyncSettings {
   lastSyncTime?: string;
   connectionStatus: 'idle' | 'connected' | 'failed';
 }
+
+export interface GalleryPhoto {
+  id: string;
+  idSesi: string;
+  fileId: string;
+  keterangan: string;
+  tanggalUnggah: string;
+  urutan: number;
+}

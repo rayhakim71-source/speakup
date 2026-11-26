@@ -48,6 +48,82 @@ function siapkanAwal() {
   if (shRiwayat.getLastRow() === 0) {
     shRiwayat.appendRow(["Waktu", "Peran", "Aksi", "Objek"]);
   }
+
+  // 6. Galeri
+  getOrCreateGallerySheet(ss);
+}
+
+function getOrCreateGallerySheet(ss) {
+  var shGaleri = ss.getSheetByName("Galeri") || ss.insertSheet("Galeri");
+  if (shGaleri.getLastRow() === 0) {
+    shGaleri.appendRow(["id", "idSesi", "fileId", "keterangan", "tanggalUnggah", "urutan"]);
+  }
+  return shGaleri;
+}
+
+function getOrCreateGalleryFolder() {
+  var parent;
+  try {
+    parent = DriveApp.getFolderById(FOLDER_ID);
+  } catch (err) {
+    parent = DriveApp.getRootFolder();
+  }
+  var folders = parent.getFoldersByName("Gallery");
+  var galleryFolder;
+  if (folders.hasNext()) {
+    galleryFolder = folders.next();
+  } else {
+    galleryFolder = parent.createFolder("Gallery");
+  }
+  try {
+    galleryFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (shareErr) {
+    // Domain or folder policy may restrict public link sharing; galeriGambar fallback remains available
+  }
+  return galleryFolder;
+}
+
+function siapkanGaleri() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  getOrCreateGallerySheet(ss);
+  getOrCreateGalleryFolder();
+}
+
+function readGalleryRows(ss) {
+  var sh = ss.getSheetByName("Galeri");
+  if (!sh) return [];
+  var rows = sh.getDataRange().getValues();
+  if (rows.length <= 1) return [];
+  var list = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    if (!r[0] || !r[2]) continue;
+    list.push({
+      id: String(r[0]),
+      idSesi: String(r[1] || ""),
+      fileId: String(r[2] || ""),
+      keterangan: String(r[3] || ""),
+      tanggalUnggah: String(r[4] || ""),
+      urutan: Number(r[5] || 0)
+    });
+  }
+  list.sort(function(a, b) { return a.urutan - b.urutan; });
+  return list;
+}
+
+function getArchiveSessionIds(ss) {
+  var archiveMap = {};
+  var shSesi = ss.getSheetByName("Sesi");
+  if (!shSesi) return archiveMap;
+  var sRows = shSesi.getDataRange().getValues();
+  var sJson = sRows.length > 1 ? sRows[sRows.length - 1][1] : null;
+  var allSesi = sJson ? JSON.parse(sJson) : [];
+  for (var i = 0; i < allSesi.length; i++) {
+    if (allSesi[i].status === "Arsip" && allSesi[i].id) {
+      archiveMap[String(allSesi[i].id)] = true;
+    }
+  }
+  return archiveMap;
 }
 
 function computeSha256(input) {
@@ -69,7 +145,12 @@ function doPost(e) {
     var action = data.action;
     var token = data.token;
 
-    var isPublicGet = (action === "getPublicData" || action === "testConnection");
+    var isPublicGet = (
+      action === "getPublicData" ||
+      action === "testConnection" ||
+      action === "galeriDaftar" ||
+      action === "galeriGambar"
+    );
     if (token !== TOKEN && !isPublicGet) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Unauthorized token" }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -137,18 +218,47 @@ function doPost(e) {
           pubCms = pObj.cms || null;
         }
       }
+      var archiveMap = getArchiveSessionIds(ss);
+      var allGallery = readGalleryRows(ss);
+      var pubGallery = [];
+      for (var gi = 0; gi < allGallery.length; gi++) {
+        if (archiveMap[allGallery[gi].idSesi]) {
+          pubGallery.push(allGallery[gi]);
+        }
+      }
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
         sessions: pubSessions,
         toolkit: pubToolkit,
         schedule: pubSchedule,
-        cms: pubCms
+        cms: pubCms,
+        gallery: pubGallery
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
     if (action === "syncData") {
       var collection = data.collection;
       var payload = data.payload;
+      if (collection === "Galeri") {
+        var shGalSync = getOrCreateGallerySheet(ss);
+        shGalSync.clear();
+        shGalSync.appendRow(["id", "idSesi", "fileId", "keterangan", "tanggalUnggah", "urutan"]);
+        if (payload && payload.length) {
+          for (var gsi = 0; gsi < payload.length; gsi++) {
+            var item = payload[gsi];
+            shGalSync.appendRow([
+              String(item.id || ""),
+              String(item.idSesi || ""),
+              String(item.fileId || ""),
+              String(item.keterangan || ""),
+              String(item.tanggalUnggah || ""),
+              String(item.urutan || gsi)
+            ]);
+          }
+        }
+        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Berhasil disimpan" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
       var sheet = ss.getSheetByName(collection) || ss.insertSheet(collection);
       sheet.clear();
       sheet.appendRow(["Updated", "Data"]);
@@ -159,6 +269,10 @@ function doPost(e) {
 
     if (action === "getData") {
       var coll = data.collection;
+      if (coll === "Galeri") {
+        return ContentService.createTextOutput(JSON.stringify({ success: true, payload: readGalleryRows(ss) }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
       var sh = ss.getSheetByName(coll);
       if (!sh) {
         return ContentService.createTextOutput(JSON.stringify({ success: true, payload: null }))
@@ -169,6 +283,160 @@ function doPost(e) {
       var payload = jsonStr ? JSON.parse(jsonStr) : null;
       return ContentService.createTextOutput(JSON.stringify({ success: true, payload: payload }))
         .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "galeriDaftar") {
+      var filterIdSesi = data.idSesi ? String(data.idSesi) : "";
+      var archIds = getArchiveSessionIds(ss);
+      var rowsGal = readGalleryRows(ss);
+      var pubPhotos = [];
+      for (var gp = 0; gp < rowsGal.length; gp++) {
+        var ph = rowsGal[gp];
+        if (!archIds[ph.idSesi]) continue;
+        if (filterIdSesi && ph.idSesi !== filterIdSesi) continue;
+        pubPhotos.push(ph);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: true, photos: pubPhotos }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "galeriUnggah") {
+      var idSesiUp = String(data.idSesi || "");
+      var mimeTypeUp = String(data.mimeType || "");
+      var base64Up = String(data.base64 || "");
+      var fileNameUp = String(data.fileName || ("photo-" + Date.now() + ".jpg"));
+      var ketUp = String(data.keterangan || "");
+      var urutanUp = String(data.urutan !== undefined ? data.urutan : 0);
+
+      var allowedMimes = { "image/jpeg": true, "image/png": true, "image/webp": true };
+      if (!idSesiUp || !base64Up || !allowedMimes[mimeTypeUp]) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Invalid file" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var bytesUp = Utilities.base64Decode(base64Up);
+      if (!bytesUp || bytesUp.length === 0 || bytesUp.length > 10 * 1024 * 1024) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: "File size invalid" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      var gFolder = getOrCreateGalleryFolder();
+      var blobUp = Utilities.newBlob(bytesUp, mimeTypeUp, fileNameUp);
+      var createdFile = gFolder.createFile(blobUp);
+      try {
+        createdFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      } catch (fileShareErr) {
+        // Ignore if domain policy blocks public link sharing
+      }
+      var newFileId = createdFile.getId();
+      var newPhotoId = String(data.id || ("gal-" + Date.now() + "-" + Math.floor(Math.random() * 1000)));
+      var tglUp = new Date().toISOString().replace("T", " ").substring(0, 16);
+
+      var shGalUp = getOrCreateGallerySheet(ss);
+      shGalUp.appendRow([newPhotoId, idSesiUp, newFileId, ketUp, tglUp, urutanUp]);
+
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        fileId: newFileId,
+        photo: {
+          id: newPhotoId,
+          idSesi: idSesiUp,
+          fileId: newFileId,
+          keterangan: ketUp,
+          tanggalUnggah: tglUp,
+          urutan: Number(urutanUp)
+        }
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "galeriUbah") {
+      var shGalEdit = getOrCreateGallerySheet(ss);
+      var gRowsEdit = shGalEdit.getDataRange().getValues();
+      var updatesList = Array.isArray(data.updates)
+        ? data.updates
+        : [{ id: data.id, keterangan: data.keterangan, urutan: data.urutan }];
+
+      for (var ui = 0; ui < updatesList.length; ui++) {
+        var upd = updatesList[ui];
+        if (!upd || !upd.id) continue;
+        for (var rIdx = 1; rIdx < gRowsEdit.length; rIdx++) {
+          if (String(gRowsEdit[rIdx][0]) === String(upd.id)) {
+            if (upd.keterangan !== undefined) {
+              shGalEdit.getRange(rIdx + 1, 4).setValue(String(upd.keterangan));
+            }
+            if (upd.urutan !== undefined) {
+              shGalEdit.getRange(rIdx + 1, 6).setValue(String(upd.urutan));
+            }
+            break;
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: true }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "galeriHapus") {
+      var delId = data.id ? String(data.id) : "";
+      var delIdSesi = data.idSesi ? String(data.idSesi) : "";
+      var shGalDel = ss.getSheetByName("Galeri");
+      if (!shGalDel) {
+        return ContentService.createTextOutput(JSON.stringify({ success: true, deletedCount: 0 }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var gRowsDel = shGalDel.getDataRange().getValues();
+      var delCount = 0;
+      for (var ri = gRowsDel.length - 1; ri >= 1; ri--) {
+        var rowId = String(gRowsDel[ri][0] || "");
+        var rowIdSesi = String(gRowsDel[ri][1] || "");
+        var rowFileId = String(gRowsDel[ri][2] || "");
+        var match = (delId && rowId === delId) || (delIdSesi && rowIdSesi === delIdSesi);
+        if (match) {
+          if (rowFileId) {
+            try {
+              DriveApp.getFileById(rowFileId).setTrashed(true);
+            } catch (trashErr) {
+              // ignore if already removed
+            }
+          }
+          shGalDel.deleteRow(ri + 1);
+          delCount++;
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: true, deletedCount: delCount }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "galeriGambar") {
+      var reqFileId = String(data.fileId || "");
+      if (!reqFileId) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Missing fileId" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var galleryDir = getOrCreateGalleryFolder();
+      var galleryDirId = galleryDir.getId();
+      var targetFile = DriveApp.getFileById(reqFileId);
+      if (targetFile.isTrashed()) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Not found" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var parents = targetFile.getParents();
+      var inGalleryFolder = false;
+      while (parents.hasNext()) {
+        if (parents.next().getId() === galleryDirId) {
+          inGalleryFolder = true;
+          break;
+        }
+      }
+      if (!inGalleryFolder) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Forbidden" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      var fileBlob = targetFile.getBlob();
+      var encoded = Utilities.base64Encode(fileBlob.getBytes());
+      var cType = fileBlob.getContentType() || "image/jpeg";
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        dataUrl: "data:" + cType + ";base64," + encoded
+      })).setMimeType(ContentService.MimeType.JSON);
     }
 
     if (action === "getProposals") {

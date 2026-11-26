@@ -1,26 +1,40 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
 import React, { useState, useEffect } from 'react';
-import { SessionData } from '../../types';
+import { SessionData, GalleryPhoto, SyncSettings } from '../../types';
 import { AdminSessionForm } from './AdminSessionForm';
 
 interface AdminSessionsProps {
   sessions: SessionData[];
+  gallery: GalleryPhoto[];
+  sync: SyncSettings;
+  role: string;
   initialEditSessionId?: string | null;
   onClearInitialEdit?: () => void;
   onSaveSession: (session: SessionData) => void;
   onDeleteSession: (id: string) => void;
   onToggleStatus: (id: string) => void;
+  onPhotoAdded: (photo: GalleryPhoto) => void;
+  onPhotoUpdated: (photo: GalleryPhoto) => void;
+  onPhotosReordered: (updatedSessionPhotos: GalleryPhoto[]) => void;
+  onPhotoDeleted: (photoId: string) => void;
   showToast: (msg: string) => void;
 }
 
 export const AdminSessions: React.FC<AdminSessionsProps> = ({
   sessions,
+  gallery,
+  sync,
+  role,
   initialEditSessionId,
   onClearInitialEdit,
   onSaveSession,
   onDeleteSession,
   onToggleStatus,
+  onPhotoAdded,
+  onPhotoUpdated,
+  onPhotosReordered,
+  onPhotoDeleted,
   showToast,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -75,12 +89,20 @@ export const AdminSessions: React.FC<AdminSessionsProps> = ({
         <AdminSessionForm
           key={currentSession?.id || 'new'}
           session={currentSession}
+          photos={gallery}
+          sync={sync}
+          role={role}
+          onPhotoAdded={onPhotoAdded}
+          onPhotoUpdated={onPhotoUpdated}
+          onPhotosReordered={onPhotosReordered}
+          onPhotoDeleted={onPhotoDeleted}
           onSave={(ses) => {
             onSaveSession(ses);
             setIsEditing(false);
             showToast('Berhasil disimpan');
           }}
           onCancel={() => setIsEditing(false)}
+          showToast={showToast}
         />
       ) : (
         <div className="space-y-6">

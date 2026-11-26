@@ -1,20 +1,100 @@
 // ATURAN BAKU: lihat designSystem. UI harus selalu minimalis, bersih, dan tanpa teks petunjuk.
 
-import React from 'react';
-import { SessionData, ScheduleSettings } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { SessionData, ScheduleSettings, GalleryPhoto } from '../../types';
+import { DrivePhoto } from '../common/DrivePhoto';
+import { postToAppsScript } from '../../utils/storage';
 
 interface SessionDetailProps {
   session: SessionData;
   schedule: ScheduleSettings;
+  photos: GalleryPhoto[];
+  webAppUrl?: string;
   onBack: () => void;
 }
 
-export const SessionDetail: React.FC<SessionDetailProps> = ({ session, schedule, onBack }) => {
+export const SessionDetail: React.FC<SessionDetailProps> = ({
+  session,
+  schedule,
+  photos,
+  webAppUrl,
+  onBack,
+}) => {
   const docLink = session.tautanDokumentasi || schedule.generalDocLink;
+  const [sessionPhotos, setSessionPhotos] = useState<GalleryPhoto[]>(() =>
+    session.status === 'Arsip'
+      ? [...photos].filter((p) => p.idSesi === session.id).sort((a, b) => a.urutan - b.urutan)
+      : []
+  );
+  const [visibleCount, setVisibleCount] = useState(6);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (session.status !== 'Arsip') {
+      setSessionPhotos([]);
+      return;
+    }
+    setSessionPhotos(
+      [...photos].filter((p) => p.idSesi === session.id).sort((a, b) => a.urutan - b.urutan)
+    );
+  }, [photos, session.id, session.status]);
+
+  useEffect(() => {
+    setVisibleCount(6);
+    setLightboxIndex(null);
+  }, [session.id]);
+
+  useEffect(() => {
+    if (session.status !== 'Arsip' || !webAppUrl) return;
+    let cancelled = false;
+    postToAppsScript(webAppUrl, { action: 'galeriDaftar', idSesi: session.id })
+      .then((res) => {
+        if (!cancelled && res && res.success && Array.isArray(res.photos)) {
+          const sorted = [...res.photos].sort((a: GalleryPhoto, b: GalleryPhoto) => a.urutan - b.urutan);
+          setSessionPhotos(sorted);
+        }
+      })
+      .catch(() => {
+        // keep prop photos if offline
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session.id, session.status, webAppUrl]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) =>
+          prev === null ? null : (prev - 1 + sessionPhotos.length) % sessionPhotos.length
+        );
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) =>
+          prev === null ? null : (prev + 1) % sessionPhotos.length
+        );
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [lightboxIndex, sessionPhotos.length]);
 
   const handlePrint = () => {
     window.print();
   };
+
+  const displayedPhotos = sessionPhotos.slice(0, visibleCount);
+  const activePhoto = lightboxIndex !== null ? sessionPhotos[lightboxIndex] : null;
 
   return (
     <div className="bg-[#F2EBDD] text-[#252623] min-h-screen py-16 px-6">
@@ -127,7 +207,134 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({ session, schedule,
             </div>
           </div>
         )}
+
+        {/* Photos */}
+        {session.status === 'Arsip' && sessionPhotos.length > 0 && (
+          <div className="no-print space-y-6">
+            <h3 className="font-serif font-bold text-2xl text-[#183D35]">Photos</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {displayedPhotos.map((photo, idx) => (
+                <button
+                  key={photo.id}
+                  type="button"
+                  onClick={() => setLightboxIndex(idx)}
+                  aria-label={photo.keterangan || session.topik}
+                  className="block aspect-[4/3] w-full rounded overflow-hidden bg-[#252623]/10 focus:outline-none focus:ring-2 focus:ring-[#183D35]"
+                >
+                  <DrivePhoto
+                    fileId={photo.fileId}
+                    size={600}
+                    alt={photo.keterangan || session.topik}
+                    webAppUrl={webAppUrl}
+                    lazy={true}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {visibleCount < sessionPhotos.length && (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 6)}
+                  className="border border-[#183D35] text-[#183D35] px-6 py-2.5 min-h-[44px] rounded text-sm font-medium hover:bg-[#183D35] hover:text-[#F2EBDD] transition-colors"
+                >
+                  Load More
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Lightbox */}
+      {activePhoto && lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxIndex(null)}
+          onTouchStart={(e) => {
+            touchStartX.current = e.touches[0]?.clientX ?? null;
+          }}
+          onTouchEnd={(e) => {
+            if (touchStartX.current === null || sessionPhotos.length <= 1) return;
+            const endX = e.changedTouches[0]?.clientX ?? touchStartX.current;
+            const diff = endX - touchStartX.current;
+            if (diff > 40) {
+              setLightboxIndex((lightboxIndex - 1 + sessionPhotos.length) % sessionPhotos.length);
+            } else if (diff < -40) {
+              setLightboxIndex((lightboxIndex + 1) % sessionPhotos.length);
+            }
+            touchStartX.current = null;
+          }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex(null);
+            }}
+            aria-label="Tutup"
+            className="fixed top-4 right-4 z-10 w-11 h-11 flex items-center justify-center rounded bg-black/50 text-white hover:bg-black/75 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          {sessionPhotos.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((lightboxIndex - 1 + sessionPhotos.length) % sessionPhotos.length);
+              }}
+              aria-label="Sebelumnya"
+              className="fixed left-3 md:left-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 flex items-center justify-center rounded bg-black/50 text-white hover:bg-black/75 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          <div
+            className="max-w-5xl w-full flex flex-col items-center space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full max-h-[80vh] aspect-[4/3] md:aspect-[16/10] rounded overflow-hidden bg-transparent">
+              <DrivePhoto
+                fileId={activePhoto.fileId}
+                size={1600}
+                alt={activePhoto.keterangan || session.topik}
+                webAppUrl={webAppUrl}
+                lazy={false}
+                className="w-full h-full object-contain bg-black"
+              />
+            </div>
+            {activePhoto.keterangan && (
+              <p className="text-sm text-[#F2EBDD] text-center max-w-2xl">
+                {activePhoto.keterangan}
+              </p>
+            )}
+          </div>
+
+          {sessionPhotos.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((lightboxIndex + 1) % sessionPhotos.length);
+              }}
+              aria-label="Berikutnya"
+              className="fixed right-3 md:right-6 top-1/2 -translate-y-1/2 z-10 w-11 h-11 flex items-center justify-center rounded bg-black/50 text-white hover:bg-black/75 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
